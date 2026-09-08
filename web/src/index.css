@@ -1,0 +1,6 @@
+/* Base document styling lives in App.css alongside the component rules it
+   supports; this file only sets the colour scheme so the browser paints form
+   controls and scrollbars to match. */
+:root {
+  color-scheme: light dark;
+}

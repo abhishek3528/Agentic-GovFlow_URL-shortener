@@ -15,6 +15,10 @@ evidence/*
 # excluded from the published repository per decision D-006.
 plan/phases/00-assessment-intake/
 
+# Internal build-time scaffolding: briefs handing work between agents. Not a
+# deliverable; the shipped record of what was decided is plan/DECISIONS.md.
+plan/CODEX_HANDOFF.md
+
 # Local runtime state
 *.db
 *.sqlite3
@@ -27,3 +31,9 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+
+# Node / the optional React client in web/
+node_modules/
+web/dist/
+*.local
+npm-debug.log*

@@ -106,7 +106,17 @@ leaves the `tmp/s01-smoke-*` directory count unchanged
 ## Limitations
 
 Lane E, the optional model-backed executor, was **not built**. The deterministic
-path is the only executor. There is no UI, Docker packaging, rate limiting,
-custom aliases, QR codes, or authentication platform. The product and
-orchestrator remain bounded demonstrations; they make no claim of production
-deployment, formal compliance certification, or enterprise identity assurance.
+path is the only executor. There is no Docker packaging, rate limiting, custom
+aliases, QR codes, or authentication platform. The product and orchestrator
+remain bounded demonstrations; they make no claim of production deployment,
+formal compliance certification, or enterprise identity assurance.
+
+There is no graphical interface to the orchestration engine, which is driven by
+its CLI and reviewed through its evidence bundles. A small optional React client
+for the URL-shortener API was added under `web/` **after** the assessed scope was
+complete. It is a consumer of the existing endpoints — it adds no product
+capability and no orchestration surface — and it is not part of the graded
+deliverable. Its one effect on the assessed code is a `CORSMiddleware`
+registration in `app/main.py`, scoped by explicit allowlist to the local dev
+origin rather than a wildcard, and disableable by setting
+`URL_SHORTENER_CORS_ORIGINS` to an empty string.

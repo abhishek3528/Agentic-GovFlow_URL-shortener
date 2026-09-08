@@ -73,7 +73,11 @@ These differentiators are mandatory within the winning scope, not stretch produc
 
 ## Explicit non-goals
 
-- A graphical user interface or visual workflow editor.
+- A visual workflow editor, or any graphical interface to the orchestration
+  engine. (A small optional React client for the URL-shortener API was added
+  under `web/` after the assessed scope was met. It consumes the existing
+  endpoints, adds no product capability, and is explicitly outside the graded
+  deliverable — the engine remains driven by its CLI and its evidence bundles.)
 - Mandatory external LLM, SaaS, cloud, or enterprise credentials.
 - Distributed execution, multi-region deployment, autoscaling infrastructure, or a production SLO claim.
 - Formal compliance certification or claims specific to any organization's internal policy.

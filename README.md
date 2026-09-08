@@ -30,6 +30,7 @@ engineering work it governs.
 11. [What I would do next](#11-what-i-would-do-next)
 12. [Deliverables map](#12-deliverables-map)
 13. [Repository layout](#13-repository-layout)
+14. [Optional React client (outside the assessed scope)](#14-optional-react-client-outside-the-assessed-scope)
 
 ---
 
@@ -275,6 +276,58 @@ Invoke-RestMethod "http://127.0.0.1:8000/links/$($created.code)/stats"
 On macOS/Linux use `export URL_SHORTENER_DB="data/reviewer.db"` and
 `.venv/bin/python`.
 
+### Run the browser client — optional
+
+Nothing above needs this. `web/` is a small React client for the shortener API,
+added after the assessed scope was complete and
+[described in §14](#14-optional-react-client-outside-the-assessed-scope). Skip it
+if you only want the graded deliverable.
+
+Requires **Node.js 20+**. It talks to the API, so start the service first and
+leave it running, then use a second terminal:
+
+```powershell
+# terminal 1 — the API (from the repository root)
+$env:URL_SHORTENER_DB = "data\reviewer.db"
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# terminal 2 — the client
+cd web
+npm install
+npm run dev
+```
+
+macOS / Linux:
+
+```bash
+# terminal 1
+export URL_SHORTENER_DB="data/reviewer.db"
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# terminal 2
+cd web && npm install && npm run dev
+```
+
+Open **http://localhost:5173**.
+
+| Command | Does |
+|---|---|
+| `npm run dev` | Dev server with hot reload on :5173 |
+| `npm run build` | Type-check and build to `web/dist/` |
+| `npm run preview` | Serve the production build locally |
+
+The client defaults to an API at `http://127.0.0.1:8000`. Point it elsewhere with
+`VITE_API_BASE`:
+
+```powershell
+$env:VITE_API_BASE = "http://127.0.0.1:9000"; npm run dev
+```
+
+If the page loads but nothing works, the API is either not running or is running
+on a different port — the two are indistinguishable to the browser, because a
+blocked cross-origin request and an unreachable server both surface as the same
+network error.
+
 ---
 
 ## 5. The URL shortener
@@ -290,6 +343,11 @@ tests, and a published contract.
 | `GET /health` | Liveness. |
 | `GET /ready` | Readiness — 503 when SQLite is unavailable. |
 | `GET /openapi.json` | Machine-readable contract, emitted by FastAPI. |
+
+The contract is emitted by FastAPI rather than maintained by hand, so it cannot
+drift from the code. It is browsable at `/docs` while the service is running:
+
+![Swagger UI for the URL-shortener API, listing the create, redirect, stats, health and readiness endpoints](docs/images/swagger-ui.png)
 
 **Deterministic short codes.** `sha256(destination)` truncated to 10 hex
 characters, with a forward walk on collision. Two consequences that matter: the
@@ -753,11 +811,16 @@ regardless.
 
 ### Deliberate non-goals
 
-No UI or visual workflow editor. No Docker. No rate limiting, custom aliases,
-bulk shortening, link expiration, QR codes, geolocation, device fingerprinting,
-or long-term analytics retention. No authentication platform, tenancy, or
-billing. No abuse-detection platform beyond bounded URL/input safety. No
-production-deployment or formal-compliance claim.
+No visual workflow editor and no graphical interface to the orchestration engine
+— it is driven by its CLI and reviewed through its evidence. No Docker. No rate
+limiting, custom aliases, bulk shortening, link expiration, QR codes,
+geolocation, device fingerprinting, or long-term analytics retention. No
+authentication platform, tenancy, or billing. No abuse-detection platform beyond
+bounded URL/input safety. No production-deployment or formal-compliance claim.
+
+The one exception is [`web/`](#14-optional-react-client-outside-the-assessed-scope),
+an optional React client for the shortener API added after the assessed scope was
+complete. It is outside the graded deliverable.
 
 ---
 
@@ -839,9 +902,63 @@ tests/                   165 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md
-plan/                    intake, acceptance strategy, DECISIONS.md
-evidence/                generated bundles — never hand-authored (git-ignored)
+plan/                    acceptance strategy, DECISIONS.md, traceability
+evidence/                generated bundles — never hand-authored
+
+web/                     optional React client — NOT part of the assessed scope
 ```
+
+---
+
+## 14. Optional React client (outside the assessed scope)
+
+`web/` holds a small React + TypeScript client for the shortener API. **It was
+added after the assessed scope was complete and is not part of the graded
+deliverable.** The orchestration engine has no UI and is not driven by one; it
+runs from its CLI and is reviewed through its evidence bundles.
+
+It exists to make the product slice tangible in a browser. It is a pure consumer
+of the endpoints in [§5](#5-the-url-shortener) — it adds no product capability
+and no orchestration surface.
+
+![The React client: a heading reading URL Shortener, an input holding a long web address, the resulting short link with copy and open buttons, and a list of previously shortened links with their open counts](docs/images/react-app.png)
+
+**What it does:** shorten a web address and copy the short link; open it; and see
+how many times each link has been opened. That is the whole surface.
+
+It is deliberately plain. Everything an engineer would want and a general user
+would not — readiness state, retention semantics, the hashing scheme, the raw
+validation messages — was removed rather than tucked into a corner, on the view
+that a demonstration client should show what the product *is* rather than how it
+works. Three touches survive that a user never notices: a missing `https://` is
+assumed rather than rejected, the API's precise-but-jargon validation errors are
+restated in plain language, and open counts refresh on their own so a count is
+never silently stale. A single small **API** link in the footer goes to Swagger
+UI for anyone who does want the machinery.
+
+**Two design notes worth stating**, because both were constraints rather than
+choices:
+
+- *No list endpoint exists.* The API exposes create, redirect, stats, health and
+  readiness — there is no way to enumerate links, and adding one purely to feed a
+  UI would have been the tail wagging the dog. The client keeps the codes this
+  browser created in `localStorage` instead. Clearing that list deletes nothing:
+  the links still resolve.
+- *CORS is scoped, not wildcard.* A dev server on `:5173` calling the API on
+  `:8000` is cross-origin, so `app/main.py` registers `CORSMiddleware` — the only
+  change this client required in assessed code. The allowlist is explicit
+  (`http://localhost:5173`, `http://127.0.0.1:5173`), methods are limited to GET
+  and POST, and credentials are off. `allow_origins=["*"]` would have been a
+  broader grant than any known consumer needs. Override with
+  `URL_SHORTENER_CORS_ORIGINS`, or set it to an empty string to disable
+  cross-origin access entirely. The API's own Swagger UI at `/docs` is
+  same-origin and needs none of this.
+
+### Running it
+
+Steps are in [§4](#run-the-browser-client--optional): start the API, then
+`cd web && npm install && npm run dev`, then open http://localhost:5173.
+`web/README.md` has the same instructions alongside the client itself.
 
 ---
 
