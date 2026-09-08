@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from orchestrator.clock import Clock, SystemClock
@@ -54,6 +55,27 @@ def create_app(
     )
     application.state.repository = repository
     application.state.shortener = service
+
+    # Cross-origin access exists solely for the optional local React client in
+    # `web/`, which runs on its own dev-server port and is therefore a different
+    # origin. The allowlist is explicit rather than "*": a wildcard would be a
+    # broader grant than any known consumer needs. Set URL_SHORTENER_CORS_ORIGINS
+    # to a comma-separated list to override, or to an empty string to disable
+    # cross-origin access entirely. The API's own Swagger UI at /docs is
+    # same-origin and needs none of this.
+    configured_origins = os.environ.get(
+        "URL_SHORTENER_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    )
+    allowed_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+    if allowed_origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=False,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
+        )
 
     @application.post(
         "/links",
