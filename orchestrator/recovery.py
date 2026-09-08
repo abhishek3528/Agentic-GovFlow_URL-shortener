@@ -9,10 +9,12 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 
 from orchestrator.contracts import Event, EventType, RunMetrics, Task, TaskState
+from orchestrator.executor import TaskOutput
 
 
 class RecoveryAction(str, Enum):
     RETRY = "retry"
+    FALLBACK = "fallback"
     COMPENSATE = "compensate"
     SAFE_STOP = "safe_stop"
 
@@ -33,8 +35,19 @@ class CompensationResult(BaseModel):
     reason: str
 
 
+class FallbackResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    handler: str
+    executed: bool
+    succeeded: bool
+    reason: str
+    output: TaskOutput | None = None
+
+
 CompensationOutcome = bool | tuple[bool, str]
 CompensationHandler = Callable[[Task, str], CompensationOutcome]
+FallbackHandler = Callable[[Task, dict[str, str]], TaskOutput]
 
 
 class RecoveryController:
@@ -43,13 +56,34 @@ class RecoveryController:
     def __init__(
         self,
         compensations: dict[str, CompensationHandler] | None = None,
+        fallbacks: dict[str, FallbackHandler] | None = None,
     ) -> None:
         self._compensations = dict(compensations or {})
+        self._fallbacks = dict(fallbacks or {})
 
     def register(self, name: str, handler: CompensationHandler) -> None:
         if not name.strip():
             raise ValueError("compensation name must not be empty")
         self._compensations[name] = handler
+
+    def register_fallback(self, name: str, handler: FallbackHandler) -> None:
+        """Register alternate task work under a stable recovery name.
+
+        A task selects a named fallback through its existing recovery hook
+        (``Task.compensation``). A task-id key is also accepted for a targeted
+        fallback when no compensating action is declared. This keeps the frozen
+        task contract unchanged while allowing fallback to precede compensation.
+        """
+        if not name.strip():
+            raise ValueError("fallback name must not be empty")
+        self._fallbacks[name] = handler
+
+    def _fallback_name(self, task: Task) -> str | None:
+        if task.id in self._fallbacks:
+            return task.id
+        if task.compensation is not None and task.compensation in self._fallbacks:
+            return task.compensation
+        return None
 
     def decide(self, task: Task, *, transient: bool) -> RecoveryDecision:
         if transient and task.retries_remaining > 0:
@@ -59,6 +93,17 @@ class RecoveryController:
                     f"transient failure; {task.retries_remaining} bounded "
                     "retry attempt(s) remain"
                 ),
+            )
+        fallback_name = self._fallback_name(task)
+        if fallback_name is not None:
+            reason = (
+                "non-transient failure skips retries"
+                if not transient
+                else "retry budget exhausted"
+            )
+            return RecoveryDecision(
+                action=RecoveryAction.FALLBACK,
+                reason=f"{reason}; execute fallback '{fallback_name}'",
             )
         if task.compensation:
             reason = (
@@ -78,6 +123,52 @@ class RecoveryController:
                 else "retry budget exhausted and no compensation is configured"
             ),
         )
+
+    def fallback(
+        self,
+        task: Task,
+        inputs: dict[str, str],
+    ) -> FallbackResult:
+        """Execute alternate work without making any governance decisions."""
+        name = self._fallback_name(task)
+        if name is None:
+            return FallbackResult(
+                handler="<none>",
+                executed=False,
+                succeeded=False,
+                reason="no fallback handler is registered for the task",
+            )
+        handler = self._fallbacks[name]
+        try:
+            output = handler(task.model_copy(deep=True), dict(inputs))
+            if not isinstance(output, TaskOutput):
+                raise TypeError("fallback handler must return TaskOutput")
+            if not output.succeeded:
+                return FallbackResult(
+                    handler=name,
+                    executed=True,
+                    succeeded=False,
+                    reason=(
+                        output.failure_reason
+                        or output.summary
+                        or "fallback handler reported failure"
+                    ),
+                    output=output,
+                )
+            return FallbackResult(
+                handler=name,
+                executed=True,
+                succeeded=True,
+                reason=output.summary or "fallback handler completed",
+                output=output,
+            )
+        except Exception as exc:
+            return FallbackResult(
+                handler=name,
+                executed=True,
+                succeeded=False,
+                reason=f"fallback handler failed closed: {type(exc).__name__}: {exc}",
+            )
 
     def compensate(self, task: Task, failure_reason: str) -> CompensationResult:
         name = task.compensation

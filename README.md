@@ -65,7 +65,8 @@ GovFlow turns a requirement into a governed execution run:
   a join, entry/exit gates that fail closed, conditional transitions.
 - Human approval on high-impact work, enforced so that an agent **cannot** grant
   it.
-- Bounded retry, compensating action, and a safe stop that never claims success.
+- Bounded retry, governed fallback, compensating action, and a safe stop that
+  never claims success.
 - Policy guardrails for security, privacy, change control and evidence
   retention — recording allows as well as denials.
 - An append-only event stream that every other view is projected from.
@@ -153,7 +154,7 @@ an agent when the model validator was bypassed. It is fixed, and
                     │   engine.py      gates, transitions, re-plan  │
                     │   policy.py      named guardrails             │
                     │   approval.py    human decisions              │
-                    │   recovery.py    retry/compensate/metrics     │
+                    │   recovery.py    retry/fallback/compensate    │
                     │   events.py      append-only JSONL store      │
                     └───────────────┬──────────────────────────────┘
                                     │  TaskExecutor.execute(task, inputs)
@@ -255,7 +256,7 @@ with a content hash.
 ### Run the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/ -q      # 165 tests
+.venv\Scripts\python.exe -m pytest tests/ -q      # 184 tests
 ```
 
 ### Run the service
@@ -481,22 +482,30 @@ run does not succeed.
 
 ### 6.5 Retry, fallback, compensation, safe-stop
 
-Recovery is bounded by `Task.retry_budget` and chooses between three actions:
-`RETRY`, `COMPENSATE`, `SAFE_STOP`.
+Recovery is bounded by `Task.retry_budget` and chooses between four actions:
+`RETRY`, `FALLBACK`, `COMPENSATE`, `SAFE_STOP`.
 
 - **Transient failure with budget remaining** → `RETRYING` → `RUNNING`, emitting
   `RETRY_ATTEMPTED`.
 - **Non-transient failure** → skips retries entirely. Re-running a deterministic
   failure burns budget for nothing.
+- **Budget exhausted with a registered fallback** → the named handler returns a
+  `TaskOutput`, which goes through the same output-contract, artifact,
+  validation, exit-gate, and `SUCCEEDED` path as primary work. The fallback is
+  recorded as `DECISION_RECORDED` with a `recovery_action: fallback`
+  discriminator because the event contract is frozen.
+- **Fallback handler failure** → falls through to the configured compensation,
+  or directly to safe-stop when none exists.
 - **Budget exhausted** → `FAILED` → the named `compensation` handler runs →
   `COMPENSATED` → the run reaches **`SAFE_STOPPED`**.
 
 `SAFE_STOPPED` is terminal and has **no outgoing transitions** — it can never be
 relabelled `SUCCEEDED` after the fact.
 
-Compensation fails closed too: a handler that raises, or returns something other
-than `bool` / `(bool, str)`, is recorded as executed-but-unsuccessful rather than
-silently passing.
+Fallback and compensation fail closed: a fallback that raises or returns
+anything other than `TaskOutput`, and a compensation that raises or returns
+anything other than `bool` / `(bool, str)`, are recorded as
+executed-but-unsuccessful rather than silently passing.
 
 One honest note: `rollback_count` counts compensations that **actually
 executed**. A task naming a compensation with no registered handler emits
@@ -687,12 +696,12 @@ quality approval referencing the revised requirement version.
 
 ## 8. Test approach and evidence
 
-**165 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
+**184 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
 per-file coverage.
 
 ### The paired-control convention
 
-**78 of those tests are an adversarial negative suite** in
+**90 of those tests are an adversarial negative suite** in
 `tests/test_governance_negative.py`, written from the specification by an agent
 that did not implement the engine.
 
@@ -866,7 +875,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 165 tests; `docs/`; [browser client](#14-browser-client) |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 184 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -889,7 +898,7 @@ orchestrator/            the control plane
   engine.py              governed execution, gates, re-planning
   policy.py              url-safety, privacy, change-control, evidence-retention
   approval.py            human approval records
-  recovery.py            retry/compensation decisions, event-derived metrics
+  recovery.py            retry/fallback/compensation, event-derived metrics
   events.py              append-only JSONL event store
   executor.py            the TaskExecutor seam + deterministic default
   clock.py               injected time and identity
@@ -897,7 +906,7 @@ orchestrator/            the control plane
 scenarios/               greenfield.py, brownfield.py, ambiguous.py,
                          runner.py, cli.py
 
-tests/                   165 tests; test_governance_negative.py is the
+tests/                   184 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md

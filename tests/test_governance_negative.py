@@ -62,7 +62,7 @@ from orchestrator.events import EventStore, EventStoreError
 from orchestrator.executor import DeterministicExecutor, ScriptedFailureExecutor, TaskOutput
 from orchestrator.graph import DependencyGraph, GraphValidationError
 from orchestrator.policy import PolicyEngine
-from orchestrator.recovery import RecoveryController, compute_run_metrics
+from orchestrator.recovery import RecoveryAction, RecoveryController, compute_run_metrics
 
 T0 = "2026-01-01T00:00:00+00:00"
 T1 = "2026-01-02T00:00:00+00:00"
@@ -801,6 +801,209 @@ def test_metrics_are_reproducible_from_the_event_stream_alone() -> None:
 
     projected = compute_run_metrics(governed.events, run_id="run-negative")
     assert projected == governed.metrics
+
+
+# ==========================================================================
+# 5b. Fallback is governed work, not an escape hatch
+#
+# The assignment names four recovery controls: "bounded retries, fallback,
+# rollback, and safe-stop". A fallback is an alternative way to complete a
+# task's work after the primary path is exhausted -- which makes it the most
+# dangerous of the four, because it is the only one that can end in SUCCEEDED.
+# Everything the engine would have demanded of the primary path it must still
+# demand of the alternative one.
+# ==========================================================================
+
+
+def degraded_output(*artifacts: str) -> TaskOutput:
+    return TaskOutput(
+        succeeded=True,
+        summary="completed by the degraded path",
+        artifacts={name: f"degraded content for {name}" for name in artifacts},
+    )
+
+
+def with_fallback(
+    handler,
+    *,
+    budget: int = 0,
+    gate_evaluator=None,
+    **task_overrides,
+) -> Engine:
+    """A task whose primary path always fails, with a fallback registered."""
+    task_overrides.setdefault("produces", ("out",))
+    failing = task("flaky", retry_budget=budget, **task_overrides)
+    engine_overrides = {} if gate_evaluator is None else {"gate_evaluator": gate_evaluator}
+    return engine(
+        failing,
+        executor=ScriptedFailureExecutor(DeterministicExecutor(), failures={"flaky": 99}),
+        recovery_controller=RecoveryController(fallbacks={"flaky": handler}),
+        **engine_overrides,
+    )
+
+
+def test_a_fallback_cannot_bypass_an_exit_gate() -> None:
+    """The alternative path is still governed by the same exit gates.
+
+    This is the attack the control most invites: if a fallback returned output
+    that went straight to SUCCEEDED, "fallback" would be a documented way to
+    launder unreviewed work past a gate that had already denied it.
+    """
+    gate = Gate(id="output-reviewed", kind=GateKind.EXIT, description="output reviewed")
+    governed = with_fallback(
+        lambda t, inputs: degraded_output("out"),
+        exit_gates=(gate,),
+        gate_evaluator=lambda g, t, artifacts: (False, "not reviewed"),
+    )
+
+    governed.run()
+
+    assert governed.task("flaky").state is not TaskState.SUCCEEDED
+    assert governed.task("flaky").state is TaskState.BLOCKED
+    assert governed.run_state is not RunState.SUCCEEDED
+    assert governed.metrics.gate_denials >= 1
+
+
+def test_fallback_exit_gate_control_is_load_bearing() -> None:
+    """With the gate passing, the identical fallback must complete the task.
+
+    Otherwise the refusal above could be caused by the fallback path being
+    broken rather than by the gate being enforced.
+    """
+    gate = Gate(id="output-reviewed", kind=GateKind.EXIT, description="output reviewed")
+    governed = with_fallback(
+        lambda t, inputs: degraded_output("out"),
+        exit_gates=(gate,),
+        gate_evaluator=lambda g, t, artifacts: (True, "reviewed"),
+    )
+
+    governed.run()
+
+    assert governed.task("flaky").state is TaskState.SUCCEEDED
+    assert "out" in {a.name for a in governed.artifacts}
+
+
+def test_a_fallback_cannot_bypass_the_declared_output_contract() -> None:
+    """A fallback that produces nothing has not done the task's work."""
+    governed = with_fallback(lambda t, inputs: TaskOutput(succeeded=True, artifacts={}))
+
+    governed.run()
+
+    assert governed.task("flaky").state is not TaskState.SUCCEEDED
+    assert "out" not in {a.name for a in governed.artifacts}
+
+
+def test_a_fallback_is_not_attempted_while_retries_remain() -> None:
+    """Retry is bounded *and* ordered: the cheap remedy is exhausted first.
+
+    A fallback that fired on the first failure would silently shrink the retry
+    budget to zero and make the bound meaningless.
+    """
+    attempts: list[str] = []
+    recovering = task("flaky", retry_budget=2, produces=("out",))
+    governed = engine(
+        recovering,
+        executor=ScriptedFailureExecutor(DeterministicExecutor(), failures={"flaky": 2}),
+        recovery_controller=RecoveryController(
+            fallbacks={"flaky": lambda t, inputs: attempts.append(t.id) or degraded_output("out")}
+        ),
+    )
+
+    governed.run()
+
+    assert not attempts, "the fallback ran while the retry budget still had room"
+    assert governed.task("flaky").state is TaskState.SUCCEEDED
+    assert governed.metrics.retry_count == 2
+
+
+def test_fallback_ordering_control_is_load_bearing() -> None:
+    """Once retries are genuinely exhausted, the fallback must be chosen.
+
+    Paired with the test above this pins the ordering: retry while budget
+    remains, fall back only after.
+    """
+    controller = RecoveryController(fallbacks={"flaky": lambda t, inputs: degraded_output("out")})
+    exhausted = task("flaky", retry_budget=1, attempts=2, produces=("out",))
+
+    decision = controller.decide(exhausted, transient=True)
+
+    assert decision.action is RecoveryAction.FALLBACK
+    assert controller.decide(
+        task("flaky", retry_budget=1, attempts=1, produces=("out",)), transient=True
+    ).action is RecoveryAction.RETRY
+
+
+@pytest.mark.parametrize(
+    ("label", "handler"),
+    [
+        ("raises", lambda t, inputs: (_ for _ in ()).throw(RuntimeError("handler exploded"))),
+        ("returns a non-TaskOutput", lambda t, inputs: "not a TaskOutput"),
+        ("returns None", lambda t, inputs: None),
+        ("reports its own failure", lambda t, inputs: TaskOutput(succeeded=False, failure_reason="degraded path also failed")),
+    ],
+)
+def test_a_broken_fallback_fails_closed(label: str, handler) -> None:
+    """A fallback handler that misbehaves must never yield a success.
+
+    The handler is supplied by scenario code, so the engine has to treat it as
+    untrusted: an exception, a wrong return type, or a self-reported failure all
+    have to land in the same place as no fallback at all.
+    """
+    governed = with_fallback(handler)
+
+    governed.run()
+
+    assert governed.task("flaky").state is not TaskState.SUCCEEDED, (
+        f"a fallback that {label} was treated as success"
+    )
+    assert governed.run_state is not RunState.SUCCEEDED
+    assert governed.metrics.tasks_succeeded == 0
+
+
+def test_an_exhausted_fallback_still_reaches_safe_stopped() -> None:
+    """Adding a fourth control must not create a path around the safe stop."""
+    governed = with_fallback(lambda t, inputs: TaskOutput(succeeded=False, failure_reason="no"))
+
+    result = governed.run()
+
+    assert result is RunState.SAFE_STOPPED
+    assert any(e.type is EventType.SAFE_STOP_TRIGGERED for e in governed.events)
+
+
+def test_a_successful_fallback_is_recorded_as_an_attributable_decision() -> None:
+    """Recovering by an alternative path is a decision, and must be auditable.
+
+    ``EventType`` is frozen and has no fallback member, so the engine records it
+    on ``DECISION_RECORDED`` with a discriminator. A reviewer has to be able to
+    tell that a task succeeded by its degraded path rather than its primary one.
+    """
+    governed = with_fallback(lambda t, inputs: degraded_output("out"))
+
+    governed.run()
+
+    assert governed.task("flaky").state is TaskState.SUCCEEDED
+    decisions = [
+        e for e in governed.events
+        if e.type is EventType.DECISION_RECORDED
+        and e.payload.get("recovery_action") == "fallback"
+    ]
+    assert decisions, "a fallback completed the task leaving no decision record"
+    payload = decisions[0].payload
+    assert payload["executed"] is True
+    assert payload["succeeded"] is True
+    assert payload["failure_reason"], "the record must say what the fallback was recovering from"
+
+
+def test_fallback_does_not_inflate_the_retry_or_rollback_metrics() -> None:
+    """A fallback is neither a retry nor a rollback; metrics must not conflate them."""
+    governed = with_fallback(lambda t, inputs: degraded_output("out"), budget=1)
+
+    governed.run()
+
+    metrics = governed.metrics
+    assert metrics.retry_count == 1, "one bounded retry preceded the fallback"
+    assert metrics.rollback_count == 0, "no compensating action ran"
+    assert metrics == compute_run_metrics(governed.events, run_id="run-negative")
 
 
 # ==========================================================================

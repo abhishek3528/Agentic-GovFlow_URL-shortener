@@ -561,51 +561,86 @@ class OrchestrationEngine:
             try:
                 output = self._executor.execute(task.model_copy(deep=True), input_contents)
             except TaskFailure as exc:
-                if self._recover_failure(task, exc.reason, exc.transient, actor):
+                if self._recover_failure(
+                    task,
+                    exc.reason,
+                    exc.transient,
+                    input_contents,
+                    input_artifacts,
+                    actor,
+                ):
                     continue
                 return
             except Exception as exc:  # executor failures must not escape governance
                 reason = f"executor raised {type(exc).__name__}: {exc}"
-                self._recover_failure(task, reason, False, actor)
+                self._recover_failure(
+                    task,
+                    reason,
+                    False,
+                    input_contents,
+                    input_artifacts,
+                    actor,
+                )
                 return
 
             if not output.succeeded:
                 reason = output.failure_reason or output.summary or "executor reported failure"
-                self._recover_failure(task, reason, False, actor)
-                return
-
-            contract_error = self._validate_output_contract(task, output)
-            if contract_error is not None:
-                self._emit_input_denial(task, contract_error, actor, kind=GateKind.EXIT)
-                self._transition_task(task.id, TaskState.BLOCKED, actor=actor, reason=contract_error)
-                return
-
-            produced = self._record_artifacts(task, output, input_artifacts, actor)
-            all_valid = self._record_validations(task, output, actor)
-            gate_inputs = {**input_artifacts, **produced}
-            exit_passed = self._evaluate_gates(task, task.exit_gates, gate_inputs, actor)
-            if not all_valid or not exit_passed:
-                reason = (
-                    "one or more validation results failed"
-                    if not all_valid
-                    else "one or more exit gates denied completion"
+                self._recover_failure(
+                    task,
+                    reason,
+                    False,
+                    input_contents,
+                    input_artifacts,
+                    actor,
                 )
-                self._transition_task(task.id, TaskState.BLOCKED, actor=actor, reason=reason)
                 return
 
-            self._transition_task(
-                task.id,
-                TaskState.SUCCEEDED,
-                actor=actor,
-                reason=output.summary or "task completed",
+            self._complete_successful_output(
+                task, output, input_artifacts, actor
             )
             return
+
+    def _complete_successful_output(
+        self,
+        task: Task,
+        output: TaskOutput,
+        input_artifacts: Mapping[str, Artifact],
+        actor: Actor,
+    ) -> None:
+        """Apply the one governed completion path to primary or fallback work."""
+        contract_error = self._validate_output_contract(task, output)
+        if contract_error is not None:
+            self._emit_input_denial(task, contract_error, actor, kind=GateKind.EXIT)
+            self._transition_task(task.id, TaskState.BLOCKED, actor=actor, reason=contract_error)
+            return
+
+        produced = self._record_artifacts(task, output, input_artifacts, actor)
+        all_valid = self._record_validations(task, output, actor)
+        gate_inputs = {**input_artifacts, **produced}
+        exit_passed = self._evaluate_gates(task, task.exit_gates, gate_inputs, actor)
+        if not all_valid or not exit_passed:
+            reason = (
+                "one or more validation results failed"
+                if not all_valid
+                else "one or more exit gates denied completion"
+            )
+            self._transition_task(task.id, TaskState.BLOCKED, actor=actor, reason=reason)
+            return
+
+        self._transition_task(
+            task.id,
+            TaskState.SUCCEEDED,
+            actor=actor,
+            reason=output.summary or "task completed",
+        )
 
     def _recover_failure(
         self,
         task: Task,
         failure_reason: str,
         transient: bool,
+        input_contents: dict[str, str],
+        input_artifacts: Mapping[str, Artifact],
         actor: Actor,
     ) -> bool:
         decision = self._recovery_controller.decide(task, transient=transient)
@@ -638,13 +673,40 @@ class OrchestrationEngine:
             )
             return True
 
+        if decision.action is RecoveryAction.FALLBACK:
+            fallback = self._recovery_controller.fallback(task, input_contents)
+            # EventType has no fallback-specific member and contracts are frozen,
+            # so the discriminator on DECISION_RECORDED preserves audit clarity.
+            self._emit(
+                EventType.DECISION_RECORDED,
+                actor=actor,
+                task_id=task.id,
+                summary=(
+                    f"fallback handler '{fallback.handler}' "
+                    f"{'succeeded' if fallback.succeeded else 'failed'}"
+                ),
+                payload={
+                    "recovery_action": "fallback",
+                    "handler": fallback.handler,
+                    "executed": fallback.executed,
+                    "succeeded": fallback.succeeded,
+                    "reason": fallback.reason,
+                    "failure_reason": failure_reason,
+                },
+            )
+            if fallback.succeeded and fallback.output is not None:
+                self._complete_successful_output(
+                    task, fallback.output, input_artifacts, actor
+                )
+                return False
+
         self._transition_task(
             task.id,
             TaskState.FAILED,
             actor=actor,
             reason=failure_reason,
         )
-        if decision.action is RecoveryAction.COMPENSATE:
+        if decision.action in {RecoveryAction.FALLBACK, RecoveryAction.COMPENSATE} and task.compensation:
             compensation = self._recovery_controller.compensate(task, failure_reason)
             self._emit(
                 EventType.COMPENSATION_EXECUTED,
