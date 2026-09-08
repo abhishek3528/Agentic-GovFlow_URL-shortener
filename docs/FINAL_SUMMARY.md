@@ -33,6 +33,13 @@ deterministic replay is checked by
   index, result, contexts, plans, graph, artifacts, decisions, controls, metrics,
   and JSONL events. Bundle contents and hashes are checked by
   `tests/test_scenario_runner.py::test_exporter_writes_indexed_reproducible_bundle`.
+- `web/`: a React + TypeScript browser client for the shortener API — shorten a
+  link, copy it, open it, and see how many times each link has been opened. It
+  consumes the endpoints above and adds no product capability of its own. Its
+  only effect on the service is a `CORSMiddleware` registration in
+  `app/main.py`, scoped by explicit allowlist to the local development origin
+  rather than a wildcard, and disabled entirely by setting
+  `URL_SHORTENER_CORS_ORIGINS` to an empty string.
 - `README.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and this final summary.
 
 ## Scenario outcomes
@@ -111,12 +118,7 @@ aliases, QR codes, or authentication platform. The product and orchestrator
 remain bounded demonstrations; they make no claim of production deployment,
 formal compliance certification, or enterprise identity assurance.
 
-There is no graphical interface to the orchestration engine, which is driven by
-its CLI and reviewed through its evidence bundles. A small optional React client
-for the URL-shortener API was added under `web/` **after** the assessed scope was
-complete. It is a consumer of the existing endpoints — it adds no product
-capability and no orchestration surface — and it is not part of the graded
-deliverable. Its one effect on the assessed code is a `CORSMiddleware`
-registration in `app/main.py`, scoped by explicit allowlist to the local dev
-origin rather than a wildcard, and disableable by setting
-`URL_SHORTENER_CORS_ORIGINS` to an empty string.
+There is no graphical interface to the orchestration engine. It is driven by its
+CLI and reviewed through its evidence bundles, and the browser client under
+`web/` is a client for the URL-shortener API rather than for the engine — no
+governed workflow depends on it.

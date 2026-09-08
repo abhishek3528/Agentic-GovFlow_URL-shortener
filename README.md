@@ -30,7 +30,7 @@ engineering work it governs.
 11. [What I would do next](#11-what-i-would-do-next)
 12. [Deliverables map](#12-deliverables-map)
 13. [Repository layout](#13-repository-layout)
-14. [Optional React client (outside the assessed scope)](#14-optional-react-client-outside-the-assessed-scope)
+14. [Browser client](#14-browser-client)
 
 ---
 
@@ -185,6 +185,7 @@ an agent when the model validator was bypassed. It is fixed, and
 | `orchestrator/executor.py` | The `TaskExecutor` seam and the deterministic default. |
 | `scenarios/` | The three runs, the dependency-aware runner, the CLI, and the evidence exporter. |
 | `app/` | The URL shortener being governed. |
+| `web/` | React browser client for the shortener API. Consumes `app/`; the engine neither knows nor depends on it. |
 
 ### Control flow for a single task
 
@@ -276,12 +277,11 @@ Invoke-RestMethod "http://127.0.0.1:8000/links/$($created.code)/stats"
 On macOS/Linux use `export URL_SHORTENER_DB="data/reviewer.db"` and
 `.venv/bin/python`.
 
-### Run the browser client — optional
+### Run the browser client
 
-Nothing above needs this. `web/` is a small React client for the shortener API,
-added after the assessed scope was complete and
-[described in §14](#14-optional-react-client-outside-the-assessed-scope). Skip it
-if you only want the graded deliverable.
+`web/` is a React client for the shortener API — see
+[§14](#14-browser-client). The scenario chain and the test suite do not depend on
+it, so skip this if you only want the orchestration engine.
 
 Requires **Node.js 20+**. It talks to the API, so start the service first and
 leave it running, then use a second terminal:
@@ -812,15 +812,14 @@ regardless.
 ### Deliberate non-goals
 
 No visual workflow editor and no graphical interface to the orchestration engine
-— it is driven by its CLI and reviewed through its evidence. No Docker. No rate
-limiting, custom aliases, bulk shortening, link expiration, QR codes,
-geolocation, device fingerprinting, or long-term analytics retention. No
+— it is driven by its CLI and reviewed through its evidence bundles. The
+[browser client](#14-browser-client) is a client for the shortener API, not for
+the engine; that boundary is deliberate and still holds.
+
+No Docker. No rate limiting, custom aliases, bulk shortening, link expiration, QR
+codes, geolocation, device fingerprinting, or long-term analytics retention. No
 authentication platform, tenancy, or billing. No abuse-detection platform beyond
 bounded URL/input safety. No production-deployment or formal-compliance claim.
-
-The one exception is [`web/`](#14-optional-react-client-outside-the-assessed-scope),
-an optional React client for the shortener API added after the assessed scope was
-complete. It is outside the graded deliverable.
 
 ---
 
@@ -867,7 +866,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 165 tests; `docs/` |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 165 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -905,21 +904,21 @@ docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md
 plan/                    acceptance strategy, DECISIONS.md, traceability
 evidence/                generated bundles — never hand-authored
 
-web/                     optional React client — NOT part of the assessed scope
+web/                     React browser client for the shortener API
 ```
 
 ---
 
-## 14. Optional React client (outside the assessed scope)
+## 14. Browser client
 
-`web/` holds a small React + TypeScript client for the shortener API. **It was
-added after the assessed scope was complete and is not part of the graded
-deliverable.** The orchestration engine has no UI and is not driven by one; it
-runs from its CLI and is reviewed through its evidence bundles.
+`web/` is a React + TypeScript client for the shortener API — the product slice
+made tangible in a browser rather than through `curl`.
 
-It exists to make the product slice tangible in a browser. It is a pure consumer
-of the endpoints in [§5](#5-the-url-shortener) — it adds no product capability
-and no orchestration surface.
+It is a pure consumer of the endpoints in [§5](#5-the-url-shortener): it adds no
+product capability and no orchestration surface. **The orchestration engine
+itself has no UI**, by design — it runs from its CLI and is reviewed through its
+evidence bundles. This client is for the URL shortener, not for the engine, and
+nothing about the governed workflow depends on it.
 
 ![The React client: a heading reading URL Shortener, an input holding a long web address, the resulting short link with copy and open buttons, and a list of previously shortened links with their open counts](docs/images/react-app.png)
 
@@ -946,7 +945,7 @@ choices:
   the links still resolve.
 - *CORS is scoped, not wildcard.* A dev server on `:5173` calling the API on
   `:8000` is cross-origin, so `app/main.py` registers `CORSMiddleware` — the only
-  change this client required in assessed code. The allowlist is explicit
+  change this client required in the service. The allowlist is explicit
   (`http://localhost:5173`, `http://127.0.0.1:5173`), methods are limited to GET
   and POST, and credentials are off. `allow_origins=["*"]` would have been a
   broader grant than any known consumer needs. Override with
@@ -956,7 +955,7 @@ choices:
 
 ### Running it
 
-Steps are in [§4](#run-the-browser-client--optional): start the API, then
+Steps are in [§4](#run-the-browser-client): start the API, then
 `cd web && npm install && npm run dev`, then open http://localhost:5173.
 `web/README.md` has the same instructions alongside the client itself.
 

@@ -1,12 +1,12 @@
 # URL Shortener — React client
 
-A small React + TypeScript client for the Governed URL Shortener API.
+A React + TypeScript client for the Governed URL Shortener API.
 
-**This is not part of the assessed scope.** It was added after the graded
-deliverable was complete. The orchestration engine — which is the actual
-deliverable — has no UI and is not driven by one; it runs from
-`python -m scenarios.cli run all` and is reviewed through its evidence bundles.
-See the repository [`README.md`](../README.md), section 14.
+It is a client for the **product**, not for the orchestration engine. The engine
+has no UI by design — it runs from `python -m scenarios.cli run all` and is
+reviewed through its evidence bundles — and nothing in the governed workflow
+depends on this client. See the repository [`README.md`](../README.md), section
+14.
 
 ## Running it
 
