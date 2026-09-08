@@ -1,0 +1,305 @@
+{
+  "approvals": [
+    {
+      "actor": {
+        "id": "reviewer:s03-product-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:00:25+00:00",
+      "granted": true,
+      "id": "approval-0001",
+      "rationale": "bounded assumptions are explicit and approved for v1 planning",
+      "task_id": "normalize-requirement-v1"
+    },
+    {
+      "actor": {
+        "id": "reviewer:s03-privacy-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:01:26+00:00",
+      "granted": true,
+      "id": "approval-0002",
+      "rationale": "disallow raw client identifiers and require UTC-day aggregates only",
+      "task_id": "clarify-analytics-privacy"
+    },
+    {
+      "actor": {
+        "id": "reviewer:s03-privacy-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:03:18+00:00",
+      "granted": true,
+      "id": "approval-0003",
+      "rationale": "revised v2 plans match the privacy clarification",
+      "task_id": "clarify-analytics-privacy"
+    },
+    {
+      "actor": {
+        "id": "reviewer:s03-privacy-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:03:33+00:00",
+      "granted": true,
+      "id": "approval-0004",
+      "rationale": "privacy and change-control allows reviewed for v2 implementation",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "actor": {
+        "id": "reviewer:s03-quality-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:04:12+00:00",
+      "granted": true,
+      "id": "approval-0005",
+      "rationale": "v2 validation and contract evidence are complete and privacy-safe",
+      "task_id": "final-quality-approval"
+    }
+  ],
+  "gate_results": [
+    {
+      "evaluated_at": "2026-01-01T00:00:16+00:00",
+      "gate_id": "ambiguities-and-assumptions-exposed",
+      "kind": "exit",
+      "passed": true,
+      "reason": "dimensions, privacy, thresholds, and scope ambiguities are explicit",
+      "task_id": "surface-analytics-ambiguities"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:20+00:00",
+      "gate_id": "assumption-set-ready-for-human-decision",
+      "kind": "entry",
+      "passed": true,
+      "reason": "bounded assumptions are reviewable; execution still requires human approval",
+      "task_id": "normalize-requirement-v1"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:31+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "normalize-requirement-v1"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:36+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "preserve-core-scope"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:42+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "preserve-core-scope"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:37+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "design-analytics-change"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:42+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "design-analytics-change"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:47+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "plan-analytics-tests"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:52+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "plan-analytics-tests"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:55+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "plan-analytics-documentation"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:00+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "plan-analytics-documentation"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:04+00:00",
+      "gate_id": "parallel-plans-complete-and-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "parallel test and documentation plans joined with fresh evidence",
+      "task_id": "join-analytics-plans"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:09+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "join-analytics-plans"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:13+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "clarify-analytics-privacy"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:24+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "clarify-analytics-privacy"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:28+00:00",
+      "gate_id": "human-privacy-clarification-present",
+      "kind": "entry",
+      "passed": true,
+      "reason": "attributable human privacy clarification is recorded",
+      "task_id": "normalize-requirement-v2"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:02:33+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "normalize-requirement-v2"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:28+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:42+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:47+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "validate-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:55+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "validate-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:03:58+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:04:03+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-coarse-analytics"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:04:07+00:00",
+      "gate_id": "v2-quality-evidence-complete",
+      "kind": "entry",
+      "passed": true,
+      "reason": "complete validation and contract evidence reference requirement v2",
+      "task_id": "final-quality-approval"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:04:18+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "final-quality-approval"
+    }
+  ],
+  "policy_decisions": [
+    {
+      "effect": "deny",
+      "evaluated_at": "2026-01-01T00:00:08+00:00",
+      "policy_id": "privacy",
+      "reason": "raw client identifiers would be retained",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:02:17+00:00",
+      "policy_id": "privacy",
+      "reason": "retained analytics fields contain no raw client identifiers",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:02:18+00:00",
+      "policy_id": "change-control",
+      "reason": "non-breaking change is classified as 'high'",
+      "task_id": "implement-coarse-analytics"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:02:19+00:00",
+      "policy_id": "privacy",
+      "reason": "retained analytics fields contain no raw client identifiers",
+      "task_id": "final-quality-approval"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:02:20+00:00",
+      "policy_id": "change-control",
+      "reason": "non-breaking change is classified as 'high'",
+      "task_id": "final-quality-approval"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:02:21+00:00",
+      "policy_id": "evidence-retention",
+      "reason": "append-only evidence is retained for 30 days",
+      "task_id": "final-quality-approval"
+    }
+  ]
+}

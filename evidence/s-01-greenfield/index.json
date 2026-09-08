@@ -1,0 +1,61 @@
+{
+  "files": [
+    {
+      "description": "terminal scenario result and evidence pointer",
+      "path": "result.json",
+      "sha256": "8e1dde06ac59c9b1543615ce7460023f3692fca52f3a465c59165c175b1c2f1a"
+    },
+    {
+      "description": "original and revised requirement contexts",
+      "path": "context_versions.json",
+      "sha256": "d6a4c92af0b9d36e6142f0eece014976220933d89441d95ebbd824f58b617b24"
+    },
+    {
+      "description": "versioned task plans with gates and I/O contracts",
+      "path": "plans.json",
+      "sha256": "3ba95348510cdf2877f93ddbb31750cdfd751337cec77170d5c3fa956081fb4d"
+    },
+    {
+      "description": "dependency and artifact-flow graph by plan revision",
+      "path": "graph.json",
+      "sha256": "f56b78049f2aa559839e49ded14bacd6f72c6fe234625bd14900008932027274"
+    },
+    {
+      "description": "artifact provenance, freshness, and content hashes",
+      "path": "artifacts.json",
+      "sha256": "c0b3fdc7a0f6aa13ee907a169ba89ef18abcd11cbdfce173d67a6eb6459d10f2"
+    },
+    {
+      "description": "attributed engineering decision lineage",
+      "path": "decisions.json",
+      "sha256": "efcc52581e24b586b8952ac5032ab352a2e20db0f0bb1c6849a1d5afd659bfe3"
+    },
+    {
+      "description": "gate, policy, and human-approval outcomes",
+      "path": "controls.json",
+      "sha256": "e1b5b1236f4115df4f95895cff7c691f56d71271fae22eef31a051d43c41991f"
+    },
+    {
+      "description": "reliability metrics projected from events",
+      "path": "metrics.json",
+      "sha256": "28e81cec1e97b8a0ef21b1e3fafeabba9f97b1f5191080c44ca563313ab9f945"
+    },
+    {
+      "description": "append-only correlated event history",
+      "path": "events.jsonl",
+      "sha256": "80988cca3f8cbda6077f3e2b0a0a1c7dae9481cb5daba1cb1d789917e9af1fd6"
+    }
+  ],
+  "reviewable_outputs": {
+    "api_tests": "tests/test_shortener_api.py",
+    "governance_tests": "tests/test_governance_negative.py",
+    "live_smoke_test": "tests/test_shortener_live.py",
+    "persistence": "app/repository.py",
+    "service": "app/main.py"
+  },
+  "run_id": "s-01-greenfield",
+  "scenario_id": "s-01",
+  "schema_version": 1,
+  "state": "succeeded",
+  "terminal_reason": "all tasks succeeded"
+}

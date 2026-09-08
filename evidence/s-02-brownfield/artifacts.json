@@ -1,0 +1,119 @@
+[
+  {
+    "content_hash": "a9195b12a788b9c81c71fc408feb9719e750fecfd39f6b07e1c38af93c1067ff",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:14+00:00",
+    "derived_from": [],
+    "id": "artifact-0001",
+    "name": "impact_analysis",
+    "path": null,
+    "produced_by_task": "analyze-baseline-impact",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "fcf28da271914c76c17432993aae749510d6d72d211b02ed1060469ec24132fb",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:24+00:00",
+    "derived_from": [
+      "artifact-0001"
+    ],
+    "id": "artifact-0002",
+    "name": "red_regression",
+    "path": null,
+    "produced_by_task": "reproduce-collision-idempotency-defect",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "e52675ff72b5a25696f6600155429b42d2297da16f2078f004a98c18ea51591f",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:34+00:00",
+    "derived_from": [
+      "artifact-0001",
+      "artifact-0002"
+    ],
+    "id": "artifact-0003",
+    "name": "change_contract",
+    "path": null,
+    "produced_by_task": "plan-gated-fix",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "c49b9542d7b007da57b7cfd5c3cee05a1d880ed206310836d185c52cee9e84cf",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:49+00:00",
+    "derived_from": [
+      "artifact-0003"
+    ],
+    "id": "artifact-0004",
+    "name": "fix_implementation",
+    "path": null,
+    "produced_by_task": "apply-collision-idempotency-fix",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "7ee8790e1f1bfb6831d79452fb6dc0f63be6a6e68d222eb952e5da290fba2399",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:00+00:00",
+    "derived_from": [
+      "artifact-0004",
+      "artifact-0003"
+    ],
+    "id": "artifact-0005",
+    "name": "green_regression",
+    "path": null,
+    "produced_by_task": "validate-fixed-behavior",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "b99b8526c64de6228753906e97fd218496bc41c1f43ec33150acb84f51adde5c",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:02+00:00",
+    "derived_from": [
+      "artifact-0004",
+      "artifact-0003"
+    ],
+    "id": "artifact-0006",
+    "name": "regression_report",
+    "path": null,
+    "produced_by_task": "validate-fixed-behavior",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "5851c6be7faa91a0649e114d305c9fecfeef68f41a3b7a32a69e98cb2990cedc",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:14+00:00",
+    "derived_from": [
+      "artifact-0004",
+      "artifact-0003"
+    ],
+    "id": "artifact-0007",
+    "name": "change_documentation",
+    "path": null,
+    "produced_by_task": "document-reliability-change",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "7515cc4c54d12e9ad7fa665a33e77906a34b7b689b8ce1146d572b5b39351305",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:23+00:00",
+    "derived_from": [
+      "artifact-0002",
+      "artifact-0005",
+      "artifact-0006",
+      "artifact-0007"
+    ],
+    "id": "artifact-0008",
+    "name": "before_after_proof",
+    "path": null,
+    "produced_by_task": "synchronize-before-after-proof",
+    "stale": false,
+    "version": 1
+  }
+]

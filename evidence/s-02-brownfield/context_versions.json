@@ -1,0 +1,24 @@
+[
+  {
+    "acceptance_checks": [
+      "repository impact analysis and a red fixture precede change planning",
+      "the fix requires change-control evaluation and human approval",
+      "focused validation proves red-to-green collision/idempotency behavior",
+      "validation and documentation fork then synchronize",
+      "persistent release verification exhausts one retry",
+      "registered compensation restores the S-01 candidate and the run safe-stops"
+    ],
+    "ambiguities": [],
+    "assumptions": [
+      "S-01 baseline run 's-01-greenfield' is the brownfield starting point.",
+      "The legacy regression fixture represents code-first allocation before the correction.",
+      "Release-candidate state restoration is bounded to an in-memory scenario pointer."
+    ],
+    "change_reason": null,
+    "created_at": "2026-01-01T00:00:00+00:00",
+    "normalized_problem": "Preserve destination idempotency across deterministic short-code collisions, with impact-first planning and governed recovery evidence.",
+    "raw_requirement": "Correct collision/idempotency reliability without changing the HTTP contract; perform repository impact analysis and reproduce the defect before planning, then provide gated red-to-green and regression evidence.",
+    "supersedes": null,
+    "version": 1
+  }
+]

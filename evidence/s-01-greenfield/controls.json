@@ -1,0 +1,145 @@
+{
+  "approvals": [
+    {
+      "actor": {
+        "id": "reviewer:s01-release-manager",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:01:29+00:00",
+      "granted": true,
+      "id": "approval-0001",
+      "rationale": "integrated validation, API contract, and operator evidence reviewed",
+      "task_id": "release-readiness"
+    }
+  ],
+  "gate_results": [
+    {
+      "evaluated_at": "2026-01-01T00:00:13+00:00",
+      "gate_id": "requirement-structure",
+      "kind": "entry",
+      "passed": true,
+      "reason": "all required product outcomes are explicit",
+      "task_id": "normalize-requirement"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:18+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "normalize-requirement"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:22+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "design-baseline"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:29+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "design-baseline"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:34+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-core"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:39+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-core"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:42+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-analytics-reliability"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:47+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "implement-analytics-reliability"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:51+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "integrated-validation"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:11+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "integrated-validation"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:15+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-baseline"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:20+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-baseline"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:24+00:00",
+      "gate_id": "release-evidence-complete",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "release-readiness"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:35+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "release-readiness"
+    }
+  ],
+  "policy_decisions": [
+    {
+      "effect": "deny",
+      "evaluated_at": "2026-01-01T00:00:08+00:00",
+      "policy_id": "url-safety",
+      "reason": "'javascript:' destinations are explicitly prohibited",
+      "task_id": "integrated-validation"
+    },
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:00:10+00:00",
+      "policy_id": "url-safety",
+      "reason": "absolute destination uses allowed scheme 'https'",
+      "task_id": "integrated-validation"
+    }
+  ]
+}

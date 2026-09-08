@@ -1,0 +1,61 @@
+{
+  "files": [
+    {
+      "description": "terminal scenario result and evidence pointer",
+      "path": "result.json",
+      "sha256": "368c87f9f9c69bf35b8106c9c22928366e6d49e88a0d331b47477de69e450124"
+    },
+    {
+      "description": "original and revised requirement contexts",
+      "path": "context_versions.json",
+      "sha256": "44dc04c869e3414c70c374d7f99f40e31cefd0a139f7971a80539aea8d441d54"
+    },
+    {
+      "description": "versioned task plans with gates and I/O contracts",
+      "path": "plans.json",
+      "sha256": "7d83efc31fb57bcaf29a12b76b92ef0b98231ed06d47db55fa6517b29817829c"
+    },
+    {
+      "description": "dependency and artifact-flow graph by plan revision",
+      "path": "graph.json",
+      "sha256": "15cd9adfcd75b786c105e6dcbe0a8395a9bf632641d9fee65946318cf3320a3a"
+    },
+    {
+      "description": "artifact provenance, freshness, and content hashes",
+      "path": "artifacts.json",
+      "sha256": "4321851f35d102327a2ad84ce4c5ad7666acba20f708fb4a9c471e47600f0b3d"
+    },
+    {
+      "description": "attributed engineering decision lineage",
+      "path": "decisions.json",
+      "sha256": "bdad8a7843209ee5007b02e8bd89ac94219eab575f6f772d17dba5bd1ccea853"
+    },
+    {
+      "description": "gate, policy, and human-approval outcomes",
+      "path": "controls.json",
+      "sha256": "2c03fa6ea7eb6238c67e3a306c00b7ef5b78ecf1a8fca8d07df7fb1235eb609d"
+    },
+    {
+      "description": "reliability metrics projected from events",
+      "path": "metrics.json",
+      "sha256": "2746545681f612cbd70eb2d7518953089304edfed020ef7d1e3efbe4655d9ca8"
+    },
+    {
+      "description": "append-only correlated event history",
+      "path": "events.jsonl",
+      "sha256": "6a8811fff0d6844dce5791854c5231151dd7652a25972777a7487622be075050"
+    }
+  ],
+  "reviewable_outputs": {
+    "api_boundary": "app/main.py",
+    "api_regression_tests": "tests/test_shortener_api.py",
+    "repository_fix": "app/repository.py",
+    "service_boundary": "app/service.py",
+    "service_regression_tests": "tests/test_shortener_service.py"
+  },
+  "run_id": "s-02-brownfield",
+  "scenario_id": "s-02",
+  "schema_version": 1,
+  "state": "safe_stopped",
+  "terminal_reason": "Persistent release verification exhausted its retry budget; the registered handler restored the S-01 release candidate and the run safe-stopped."
+}

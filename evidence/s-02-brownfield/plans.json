@@ -1,0 +1,287 @@
+[
+  {
+    "change_reason": null,
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:01+00:00",
+    "revision": 1,
+    "supersedes": null,
+    "tasks": [
+      {
+        "attempts": 1,
+        "capability": "brownfield-analyst",
+        "compensation": null,
+        "consumes": [],
+        "depends_on": [],
+        "entry_gates": [
+          {
+            "description": "The successful S-01 baseline and cited repository sources must exist.",
+            "id": "s01-baseline-and-repository-present",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "analyze-baseline-impact",
+        "impact": "low",
+        "name": "Inspect S-01 repository impact before change planning",
+        "produces": [
+          "impact_analysis"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "impact_analysis"
+        ],
+        "depends_on": [
+          "analyze-baseline-impact"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input must exist and be fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "reproduce-collision-idempotency-defect",
+        "impact": "low",
+        "name": "Run red collision/idempotency regression fixture",
+        "produces": [
+          "red_regression"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "solution-architect",
+        "compensation": null,
+        "consumes": [
+          "impact_analysis",
+          "red_regression"
+        ],
+        "depends_on": [
+          "reproduce-collision-idempotency-defect"
+        ],
+        "entry_gates": [
+          {
+            "description": "Repository impact analysis and a failing legacy regression fixture gate planning.",
+            "id": "impact-and-red-required-before-planning",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "plan-gated-fix",
+        "impact": "low",
+        "name": "Plan the bounded reliability correction",
+        "produces": [
+          "change_contract"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "backend-engineer",
+        "compensation": null,
+        "consumes": [
+          "change_contract"
+        ],
+        "depends_on": [
+          "plan-gated-fix"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input must exist and be fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "apply-collision-idempotency-fix",
+        "impact": "high",
+        "name": "Apply the repository ordering correction",
+        "produces": [
+          "fix_implementation"
+        ],
+        "retry_budget": 0,
+        "stage": "implementation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "fix_implementation",
+          "change_contract"
+        ],
+        "depends_on": [
+          "apply-collision-idempotency-fix"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input must exist and be fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "validate-fixed-behavior",
+        "impact": "low",
+        "name": "Run focused and regression validation",
+        "produces": [
+          "green_regression",
+          "regression_report"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "fix_implementation",
+          "change_contract"
+        ],
+        "depends_on": [
+          "apply-collision-idempotency-fix"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input must exist and be fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "document-reliability-change",
+        "impact": "low",
+        "name": "Document the bounded behavior change",
+        "produces": [
+          "change_documentation"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "release-quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "red_regression",
+          "green_regression",
+          "regression_report",
+          "change_documentation"
+        ],
+        "depends_on": [
+          "validate-fixed-behavior",
+          "document-reliability-change"
+        ],
+        "entry_gates": [
+          {
+            "description": "Focused green proof and updated documentation must synchronize before validation.",
+            "id": "green-proof-and-docs-required",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "synchronize-before-after-proof",
+        "impact": "low",
+        "name": "Join red, green, regression, and documentation evidence",
+        "produces": [
+          "before_after_proof"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 2,
+        "capability": "release-engineer",
+        "compensation": "restore-s01-release-candidate",
+        "consumes": [
+          "before_after_proof"
+        ],
+        "depends_on": [
+          "synchronize-before-after-proof"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input must exist and be fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output must exist before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "verify-release-candidate",
+        "impact": "low",
+        "name": "Verify the brownfield release candidate",
+        "produces": [
+          "release_verification"
+        ],
+        "retry_budget": 1,
+        "stage": "release_readiness",
+        "state": "compensated"
+      }
+    ]
+  }
+]

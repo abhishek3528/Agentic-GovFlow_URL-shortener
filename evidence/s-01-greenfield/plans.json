@@ -1,0 +1,256 @@
+[
+  {
+    "change_reason": null,
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:01+00:00",
+    "revision": 1,
+    "supersedes": null,
+    "tasks": [
+      {
+        "attempts": 1,
+        "capability": "business-analyst",
+        "compensation": null,
+        "consumes": [],
+        "depends_on": [],
+        "entry_gates": [
+          {
+            "description": "The request names the required product outcomes.",
+            "id": "requirement-structure",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "normalize-requirement",
+        "impact": "low",
+        "name": "Normalize greenfield requirement",
+        "produces": [
+          "normalized_requirement"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "solution-architect",
+        "compensation": null,
+        "consumes": [
+          "normalized_requirement"
+        ],
+        "depends_on": [
+          "normalize-requirement"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists and is fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "design-baseline",
+        "impact": "low",
+        "name": "Define service and API design",
+        "produces": [
+          "service_design",
+          "api_contract"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "backend-engineer",
+        "compensation": null,
+        "consumes": [
+          "service_design",
+          "api_contract"
+        ],
+        "depends_on": [
+          "design-baseline"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists and is fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "implement-core",
+        "impact": "low",
+        "name": "Implement create and redirect path",
+        "produces": [
+          "core_implementation"
+        ],
+        "retry_budget": 0,
+        "stage": "implementation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "reliability-engineer",
+        "compensation": null,
+        "consumes": [
+          "service_design",
+          "api_contract"
+        ],
+        "depends_on": [
+          "design-baseline"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists and is fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "implement-analytics-reliability",
+        "impact": "low",
+        "name": "Implement analytics and health path",
+        "produces": [
+          "analytics_reliability_implementation"
+        ],
+        "retry_budget": 0,
+        "stage": "implementation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 2,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "core_implementation",
+          "analytics_reliability_implementation"
+        ],
+        "depends_on": [
+          "implement-core",
+          "implement-analytics-reliability"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists and is fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "integrated-validation",
+        "impact": "low",
+        "name": "Run unit, integration, contract, and smoke validation",
+        "produces": [
+          "integrated_validation",
+          "smoke_result"
+        ],
+        "retry_budget": 1,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "api_contract",
+          "integrated_validation"
+        ],
+        "depends_on": [
+          "design-baseline",
+          "integrated-validation"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists and is fresh.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "document-baseline",
+        "impact": "low",
+        "name": "Publish baseline usage and validation references",
+        "produces": [
+          "operator_guide"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "release-manager",
+        "compensation": null,
+        "consumes": [
+          "api_contract",
+          "integrated_validation",
+          "operator_guide"
+        ],
+        "depends_on": [
+          "integrated-validation",
+          "document-baseline"
+        ],
+        "entry_gates": [
+          {
+            "description": "Integrated validation, documentation, and API contract are present.",
+            "id": "release-evidence-complete",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output is present before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "release-readiness",
+        "impact": "high",
+        "name": "Human release-readiness review",
+        "produces": [
+          "release_readiness_record"
+        ],
+        "retry_budget": 0,
+        "stage": "release_readiness",
+        "state": "succeeded"
+      }
+    ]
+  }
+]

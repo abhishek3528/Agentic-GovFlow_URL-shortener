@@ -1,0 +1,16 @@
+{
+  "approvals_requested": 1,
+  "end_to_end_seconds": 97.0,
+  "gate_denials": 0,
+  "mttr_seconds": 19.0,
+  "policy_denials": 1,
+  "replans": 0,
+  "retry_count": 1,
+  "retry_rate": 0.14285714285714285,
+  "rollback_count": 0,
+  "rollback_rate": 0.0,
+  "success_rate": 1.0,
+  "tasks_failed": 0,
+  "tasks_succeeded": 7,
+  "tasks_total": 7
+}

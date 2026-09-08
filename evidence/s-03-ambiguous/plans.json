@@ -1,0 +1,869 @@
+[
+  {
+    "change_reason": null,
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:00+00:00",
+    "revision": 1,
+    "supersedes": null,
+    "tasks": [
+      {
+        "attempts": 1,
+        "capability": "business-analyst",
+        "compensation": null,
+        "consumes": [],
+        "depends_on": [],
+        "entry_gates": [],
+        "exit_gates": [
+          {
+            "description": "Missing dimensions, assumptions, and consequences are explicit.",
+            "id": "ambiguities-and-assumptions-exposed",
+            "kind": "exit"
+          }
+        ],
+        "id": "surface-analytics-ambiguities",
+        "impact": "low",
+        "name": "Classify analytics ambiguities and propose bounded assumptions",
+        "produces": [
+          "ambiguity_report",
+          "assumption_proposal"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "product-owner",
+        "compensation": null,
+        "consumes": [
+          "ambiguity_report",
+          "assumption_proposal"
+        ],
+        "depends_on": [
+          "surface-analytics-ambiguities"
+        ],
+        "entry_gates": [
+          {
+            "description": "Normalization cannot execute before the bounded assumption set is reviewable.",
+            "id": "assumption-set-ready-for-human-decision",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "normalize-requirement-v1",
+        "impact": "high",
+        "name": "Human-approved normalization of the ambiguous request",
+        "produces": [
+          "normalized_requirement_v1"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "brownfield-analyst",
+        "compensation": null,
+        "consumes": [
+          "normalized_requirement_v1"
+        ],
+        "depends_on": [
+          "normalize-requirement-v1"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "preserve-core-scope",
+        "impact": "low",
+        "name": "Confirm unchanged URL-shortener core scope",
+        "produces": [
+          "core_scope_assurance"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "solution-architect",
+        "compensation": null,
+        "consumes": [
+          "normalized_requirement_v1"
+        ],
+        "depends_on": [
+          "normalize-requirement-v1"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "design-analytics-change",
+        "impact": "low",
+        "name": "Design tentative analytics improvement",
+        "produces": [
+          "analytics_design"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "stale"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "analytics_design"
+        ],
+        "depends_on": [
+          "design-analytics-change"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "plan-analytics-tests",
+        "impact": "low",
+        "name": "Plan analytics and privacy validation",
+        "produces": [
+          "analytics_test_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "stale"
+      },
+      {
+        "attempts": 1,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "analytics_design"
+        ],
+        "depends_on": [
+          "design-analytics-change"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "plan-analytics-documentation",
+        "impact": "low",
+        "name": "Plan contract and limitation documentation",
+        "produces": [
+          "analytics_documentation_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "stale"
+      },
+      {
+        "attempts": 1,
+        "capability": "delivery-lead",
+        "compensation": null,
+        "consumes": [
+          "analytics_test_plan",
+          "analytics_documentation_plan"
+        ],
+        "depends_on": [
+          "plan-analytics-tests",
+          "plan-analytics-documentation"
+        ],
+        "entry_gates": [
+          {
+            "description": "Test and documentation planning must both be complete and fresh.",
+            "id": "parallel-plans-complete-and-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "join-analytics-plans",
+        "impact": "low",
+        "name": "Synchronize analytics test and documentation plans",
+        "produces": [
+          "joined_analytics_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "stale"
+      },
+      {
+        "attempts": 1,
+        "capability": "privacy-owner",
+        "compensation": null,
+        "consumes": [
+          "joined_analytics_plan"
+        ],
+        "depends_on": [
+          "join-analytics-plans"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "clarify-analytics-privacy",
+        "impact": "high",
+        "name": "Human clarification of analytics privacy and scope",
+        "produces": [
+          "clarification_record"
+        ],
+        "retry_budget": 0,
+        "stage": "release_readiness",
+        "state": "stale"
+      },
+      {
+        "attempts": 0,
+        "capability": "backend-engineer",
+        "compensation": null,
+        "consumes": [
+          "clarification_record",
+          "joined_analytics_plan",
+          "core_scope_assurance"
+        ],
+        "depends_on": [
+          "clarify-analytics-privacy",
+          "preserve-core-scope"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "implement-coarse-analytics",
+        "impact": "high",
+        "name": "Implement UTC daily click aggregates without client identity",
+        "produces": [
+          "analytics_implementation"
+        ],
+        "retry_budget": 0,
+        "stage": "implementation",
+        "state": "stale"
+      },
+      {
+        "attempts": 0,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "analytics_implementation"
+        ],
+        "depends_on": [
+          "implement-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "validate-coarse-analytics",
+        "impact": "low",
+        "name": "Validate aggregation precision and prohibited-data absence",
+        "produces": [
+          "analytics_validation"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "stale"
+      },
+      {
+        "attempts": 0,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "analytics_implementation"
+        ],
+        "depends_on": [
+          "implement-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "document-coarse-analytics",
+        "impact": "low",
+        "name": "Document the v2 analytics contract and precision limits",
+        "produces": [
+          "analytics_contract_documentation"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "stale"
+      },
+      {
+        "attempts": 0,
+        "capability": "quality-owner",
+        "compensation": null,
+        "consumes": [
+          "analytics_validation",
+          "analytics_contract_documentation"
+        ],
+        "depends_on": [
+          "validate-coarse-analytics",
+          "document-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Final approval requires v2 validation and contract evidence.",
+            "id": "v2-quality-evidence-complete",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "final-quality-approval",
+        "impact": "high",
+        "name": "Human final quality approval against requirement v2",
+        "produces": [
+          "final_quality_record"
+        ],
+        "retry_budget": 0,
+        "stage": "release_readiness",
+        "state": "stale"
+      }
+    ]
+  },
+  {
+    "change_reason": "Privacy owner clarified that raw client identifiers are prohibited and analytics precision is limited to UTC calendar-day counts.",
+    "context_version": 2,
+    "created_at": "2026-01-01T00:02:03+00:00",
+    "revision": 2,
+    "supersedes": 1,
+    "tasks": [
+      {
+        "attempts": 1,
+        "capability": "business-analyst",
+        "compensation": null,
+        "consumes": [],
+        "depends_on": [],
+        "entry_gates": [],
+        "exit_gates": [
+          {
+            "description": "Missing dimensions, assumptions, and consequences are explicit.",
+            "id": "ambiguities-and-assumptions-exposed",
+            "kind": "exit"
+          }
+        ],
+        "id": "surface-analytics-ambiguities",
+        "impact": "low",
+        "name": "Classify analytics ambiguities and propose bounded assumptions",
+        "produces": [
+          "ambiguity_report",
+          "assumption_proposal"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "product-owner",
+        "compensation": null,
+        "consumes": [
+          "ambiguity_report",
+          "assumption_proposal"
+        ],
+        "depends_on": [
+          "surface-analytics-ambiguities"
+        ],
+        "entry_gates": [
+          {
+            "description": "Normalization cannot execute before the bounded assumption set is reviewable.",
+            "id": "assumption-set-ready-for-human-decision",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "normalize-requirement-v1",
+        "impact": "high",
+        "name": "Human-approved normalization of the ambiguous request",
+        "produces": [
+          "normalized_requirement_v1"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "brownfield-analyst",
+        "compensation": null,
+        "consumes": [
+          "normalized_requirement_v1"
+        ],
+        "depends_on": [
+          "normalize-requirement-v1"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "preserve-core-scope",
+        "impact": "low",
+        "name": "Confirm unchanged URL-shortener core scope",
+        "produces": [
+          "core_scope_assurance"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "privacy-analyst",
+        "compensation": null,
+        "consumes": [
+          "ambiguity_report",
+          "assumption_proposal"
+        ],
+        "depends_on": [
+          "surface-analytics-ambiguities"
+        ],
+        "entry_gates": [
+          {
+            "description": "The v2 normalization requires an attributable human clarification.",
+            "id": "human-privacy-clarification-present",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "normalize-requirement-v2",
+        "impact": "low",
+        "name": "Normalize the human privacy clarification as requirement v2",
+        "produces": [
+          "normalized_requirement_v2"
+        ],
+        "retry_budget": 0,
+        "stage": "requirements",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "solution-architect",
+        "compensation": null,
+        "consumes": [
+          "normalized_requirement_v2"
+        ],
+        "depends_on": [
+          "normalize-requirement-v2"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "design-analytics-change",
+        "impact": "low",
+        "name": "Design coarse, non-identifying daily analytics",
+        "produces": [
+          "analytics_design"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "analytics_design"
+        ],
+        "depends_on": [
+          "design-analytics-change"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "plan-analytics-tests",
+        "impact": "low",
+        "name": "Plan analytics and privacy validation",
+        "produces": [
+          "analytics_test_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "analytics_design"
+        ],
+        "depends_on": [
+          "design-analytics-change"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "plan-analytics-documentation",
+        "impact": "low",
+        "name": "Plan contract and limitation documentation",
+        "produces": [
+          "analytics_documentation_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "delivery-lead",
+        "compensation": null,
+        "consumes": [
+          "analytics_test_plan",
+          "analytics_documentation_plan"
+        ],
+        "depends_on": [
+          "plan-analytics-tests",
+          "plan-analytics-documentation"
+        ],
+        "entry_gates": [
+          {
+            "description": "Test and documentation planning must both be complete and fresh.",
+            "id": "parallel-plans-complete-and-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "join-analytics-plans",
+        "impact": "low",
+        "name": "Synchronize analytics test and documentation plans",
+        "produces": [
+          "joined_analytics_plan"
+        ],
+        "retry_budget": 0,
+        "stage": "design",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "privacy-owner",
+        "compensation": null,
+        "consumes": [
+          "joined_analytics_plan"
+        ],
+        "depends_on": [
+          "join-analytics-plans"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "clarify-analytics-privacy",
+        "impact": "high",
+        "name": "Human clarification of analytics privacy and scope",
+        "produces": [
+          "clarification_record"
+        ],
+        "retry_budget": 0,
+        "stage": "release_readiness",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "backend-engineer",
+        "compensation": null,
+        "consumes": [
+          "clarification_record",
+          "joined_analytics_plan",
+          "core_scope_assurance"
+        ],
+        "depends_on": [
+          "clarify-analytics-privacy",
+          "preserve-core-scope"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "implement-coarse-analytics",
+        "impact": "high",
+        "name": "Implement UTC daily click aggregates without client identity",
+        "produces": [
+          "analytics_implementation"
+        ],
+        "retry_budget": 0,
+        "stage": "implementation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-engineer",
+        "compensation": null,
+        "consumes": [
+          "analytics_implementation"
+        ],
+        "depends_on": [
+          "implement-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "validate-coarse-analytics",
+        "impact": "low",
+        "name": "Validate aggregation precision and prohibited-data absence",
+        "produces": [
+          "analytics_validation"
+        ],
+        "retry_budget": 0,
+        "stage": "testing",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "technical-writer",
+        "compensation": null,
+        "consumes": [
+          "analytics_implementation"
+        ],
+        "depends_on": [
+          "implement-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Every declared input exists, is fresh, and comes from a successful producer.",
+            "id": "declared-inputs-fresh",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "document-coarse-analytics",
+        "impact": "low",
+        "name": "Document the v2 analytics contract and precision limits",
+        "produces": [
+          "analytics_contract_documentation"
+        ],
+        "retry_budget": 0,
+        "stage": "documentation",
+        "state": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "capability": "quality-owner",
+        "compensation": null,
+        "consumes": [
+          "analytics_validation",
+          "analytics_contract_documentation"
+        ],
+        "depends_on": [
+          "validate-coarse-analytics",
+          "document-coarse-analytics"
+        ],
+        "entry_gates": [
+          {
+            "description": "Final approval requires v2 validation and contract evidence.",
+            "id": "v2-quality-evidence-complete",
+            "kind": "entry"
+          }
+        ],
+        "exit_gates": [
+          {
+            "description": "Every declared output exists before task success.",
+            "id": "declared-outputs-present",
+            "kind": "exit"
+          }
+        ],
+        "id": "final-quality-approval",
+        "impact": "high",
+        "name": "Human final quality approval against requirement v2",
+        "produces": [
+          "final_quality_record"
+        ],
+        "retry_budget": 0,
+        "stage": "release_readiness",
+        "state": "succeeded"
+      }
+    ]
+  }
+]

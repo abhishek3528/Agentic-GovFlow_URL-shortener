@@ -1,0 +1,755 @@
+{
+  "revisions": [
+    {
+      "artifact_flows": [
+        {
+          "artifact": "ambiguity_report",
+          "producer": "surface-analytics-ambiguities"
+        },
+        {
+          "artifact": "assumption_proposal",
+          "producer": "surface-analytics-ambiguities"
+        },
+        {
+          "artifact": "normalized_requirement_v1",
+          "producer": "normalize-requirement-v1"
+        },
+        {
+          "artifact": "core_scope_assurance",
+          "producer": "preserve-core-scope"
+        },
+        {
+          "artifact": "analytics_design",
+          "producer": "design-analytics-change"
+        },
+        {
+          "artifact": "analytics_test_plan",
+          "producer": "plan-analytics-tests"
+        },
+        {
+          "artifact": "analytics_documentation_plan",
+          "producer": "plan-analytics-documentation"
+        },
+        {
+          "artifact": "joined_analytics_plan",
+          "producer": "join-analytics-plans"
+        },
+        {
+          "artifact": "clarification_record",
+          "producer": "clarify-analytics-privacy"
+        },
+        {
+          "artifact": "analytics_implementation",
+          "producer": "implement-coarse-analytics"
+        },
+        {
+          "artifact": "analytics_validation",
+          "producer": "validate-coarse-analytics"
+        },
+        {
+          "artifact": "analytics_contract_documentation",
+          "producer": "document-coarse-analytics"
+        },
+        {
+          "artifact": "final_quality_record",
+          "producer": "final-quality-approval"
+        }
+      ],
+      "context_version": 1,
+      "dependency_edges": [
+        {
+          "from": "surface-analytics-ambiguities",
+          "to": "normalize-requirement-v1"
+        },
+        {
+          "from": "normalize-requirement-v1",
+          "to": "preserve-core-scope"
+        },
+        {
+          "from": "normalize-requirement-v1",
+          "to": "design-analytics-change"
+        },
+        {
+          "from": "design-analytics-change",
+          "to": "plan-analytics-tests"
+        },
+        {
+          "from": "design-analytics-change",
+          "to": "plan-analytics-documentation"
+        },
+        {
+          "from": "plan-analytics-tests",
+          "to": "join-analytics-plans"
+        },
+        {
+          "from": "plan-analytics-documentation",
+          "to": "join-analytics-plans"
+        },
+        {
+          "from": "join-analytics-plans",
+          "to": "clarify-analytics-privacy"
+        },
+        {
+          "from": "clarify-analytics-privacy",
+          "to": "implement-coarse-analytics"
+        },
+        {
+          "from": "preserve-core-scope",
+          "to": "implement-coarse-analytics"
+        },
+        {
+          "from": "implement-coarse-analytics",
+          "to": "validate-coarse-analytics"
+        },
+        {
+          "from": "implement-coarse-analytics",
+          "to": "document-coarse-analytics"
+        },
+        {
+          "from": "validate-coarse-analytics",
+          "to": "final-quality-approval"
+        },
+        {
+          "from": "document-coarse-analytics",
+          "to": "final-quality-approval"
+        }
+      ],
+      "nodes": [
+        {
+          "capability": "business-analyst",
+          "consumes": [],
+          "entry_gates": [],
+          "exit_gates": [
+            "ambiguities-and-assumptions-exposed"
+          ],
+          "id": "surface-analytics-ambiguities",
+          "impact": "low",
+          "name": "Classify analytics ambiguities and propose bounded assumptions",
+          "produces": [
+            "ambiguity_report",
+            "assumption_proposal"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "product-owner",
+          "consumes": [
+            "ambiguity_report",
+            "assumption_proposal"
+          ],
+          "entry_gates": [
+            "assumption-set-ready-for-human-decision"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "normalize-requirement-v1",
+          "impact": "high",
+          "name": "Human-approved normalization of the ambiguous request",
+          "produces": [
+            "normalized_requirement_v1"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "brownfield-analyst",
+          "consumes": [
+            "normalized_requirement_v1"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "preserve-core-scope",
+          "impact": "low",
+          "name": "Confirm unchanged URL-shortener core scope",
+          "produces": [
+            "core_scope_assurance"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "solution-architect",
+          "consumes": [
+            "normalized_requirement_v1"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "design-analytics-change",
+          "impact": "low",
+          "name": "Design tentative analytics improvement",
+          "produces": [
+            "analytics_design"
+          ],
+          "stage": "design",
+          "state": "stale"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "analytics_design"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "plan-analytics-tests",
+          "impact": "low",
+          "name": "Plan analytics and privacy validation",
+          "produces": [
+            "analytics_test_plan"
+          ],
+          "stage": "testing",
+          "state": "stale"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "analytics_design"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "plan-analytics-documentation",
+          "impact": "low",
+          "name": "Plan contract and limitation documentation",
+          "produces": [
+            "analytics_documentation_plan"
+          ],
+          "stage": "documentation",
+          "state": "stale"
+        },
+        {
+          "capability": "delivery-lead",
+          "consumes": [
+            "analytics_test_plan",
+            "analytics_documentation_plan"
+          ],
+          "entry_gates": [
+            "parallel-plans-complete-and-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "join-analytics-plans",
+          "impact": "low",
+          "name": "Synchronize analytics test and documentation plans",
+          "produces": [
+            "joined_analytics_plan"
+          ],
+          "stage": "design",
+          "state": "stale"
+        },
+        {
+          "capability": "privacy-owner",
+          "consumes": [
+            "joined_analytics_plan"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "clarify-analytics-privacy",
+          "impact": "high",
+          "name": "Human clarification of analytics privacy and scope",
+          "produces": [
+            "clarification_record"
+          ],
+          "stage": "release_readiness",
+          "state": "stale"
+        },
+        {
+          "capability": "backend-engineer",
+          "consumes": [
+            "clarification_record",
+            "joined_analytics_plan",
+            "core_scope_assurance"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "implement-coarse-analytics",
+          "impact": "high",
+          "name": "Implement UTC daily click aggregates without client identity",
+          "produces": [
+            "analytics_implementation"
+          ],
+          "stage": "implementation",
+          "state": "stale"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "analytics_implementation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "validate-coarse-analytics",
+          "impact": "low",
+          "name": "Validate aggregation precision and prohibited-data absence",
+          "produces": [
+            "analytics_validation"
+          ],
+          "stage": "testing",
+          "state": "stale"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "analytics_implementation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "document-coarse-analytics",
+          "impact": "low",
+          "name": "Document the v2 analytics contract and precision limits",
+          "produces": [
+            "analytics_contract_documentation"
+          ],
+          "stage": "documentation",
+          "state": "stale"
+        },
+        {
+          "capability": "quality-owner",
+          "consumes": [
+            "analytics_validation",
+            "analytics_contract_documentation"
+          ],
+          "entry_gates": [
+            "v2-quality-evidence-complete"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "final-quality-approval",
+          "impact": "high",
+          "name": "Human final quality approval against requirement v2",
+          "produces": [
+            "final_quality_record"
+          ],
+          "stage": "release_readiness",
+          "state": "stale"
+        }
+      ],
+      "revision": 1,
+      "supersedes": null
+    },
+    {
+      "artifact_flows": [
+        {
+          "artifact": "ambiguity_report",
+          "producer": "surface-analytics-ambiguities"
+        },
+        {
+          "artifact": "assumption_proposal",
+          "producer": "surface-analytics-ambiguities"
+        },
+        {
+          "artifact": "normalized_requirement_v1",
+          "producer": "normalize-requirement-v1"
+        },
+        {
+          "artifact": "core_scope_assurance",
+          "producer": "preserve-core-scope"
+        },
+        {
+          "artifact": "normalized_requirement_v2",
+          "producer": "normalize-requirement-v2"
+        },
+        {
+          "artifact": "analytics_design",
+          "producer": "design-analytics-change"
+        },
+        {
+          "artifact": "analytics_test_plan",
+          "producer": "plan-analytics-tests"
+        },
+        {
+          "artifact": "analytics_documentation_plan",
+          "producer": "plan-analytics-documentation"
+        },
+        {
+          "artifact": "joined_analytics_plan",
+          "producer": "join-analytics-plans"
+        },
+        {
+          "artifact": "clarification_record",
+          "producer": "clarify-analytics-privacy"
+        },
+        {
+          "artifact": "analytics_implementation",
+          "producer": "implement-coarse-analytics"
+        },
+        {
+          "artifact": "analytics_validation",
+          "producer": "validate-coarse-analytics"
+        },
+        {
+          "artifact": "analytics_contract_documentation",
+          "producer": "document-coarse-analytics"
+        },
+        {
+          "artifact": "final_quality_record",
+          "producer": "final-quality-approval"
+        }
+      ],
+      "context_version": 2,
+      "dependency_edges": [
+        {
+          "from": "surface-analytics-ambiguities",
+          "to": "normalize-requirement-v1"
+        },
+        {
+          "from": "normalize-requirement-v1",
+          "to": "preserve-core-scope"
+        },
+        {
+          "from": "surface-analytics-ambiguities",
+          "to": "normalize-requirement-v2"
+        },
+        {
+          "from": "normalize-requirement-v2",
+          "to": "design-analytics-change"
+        },
+        {
+          "from": "design-analytics-change",
+          "to": "plan-analytics-tests"
+        },
+        {
+          "from": "design-analytics-change",
+          "to": "plan-analytics-documentation"
+        },
+        {
+          "from": "plan-analytics-tests",
+          "to": "join-analytics-plans"
+        },
+        {
+          "from": "plan-analytics-documentation",
+          "to": "join-analytics-plans"
+        },
+        {
+          "from": "join-analytics-plans",
+          "to": "clarify-analytics-privacy"
+        },
+        {
+          "from": "clarify-analytics-privacy",
+          "to": "implement-coarse-analytics"
+        },
+        {
+          "from": "preserve-core-scope",
+          "to": "implement-coarse-analytics"
+        },
+        {
+          "from": "implement-coarse-analytics",
+          "to": "validate-coarse-analytics"
+        },
+        {
+          "from": "implement-coarse-analytics",
+          "to": "document-coarse-analytics"
+        },
+        {
+          "from": "validate-coarse-analytics",
+          "to": "final-quality-approval"
+        },
+        {
+          "from": "document-coarse-analytics",
+          "to": "final-quality-approval"
+        }
+      ],
+      "nodes": [
+        {
+          "capability": "business-analyst",
+          "consumes": [],
+          "entry_gates": [],
+          "exit_gates": [
+            "ambiguities-and-assumptions-exposed"
+          ],
+          "id": "surface-analytics-ambiguities",
+          "impact": "low",
+          "name": "Classify analytics ambiguities and propose bounded assumptions",
+          "produces": [
+            "ambiguity_report",
+            "assumption_proposal"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "product-owner",
+          "consumes": [
+            "ambiguity_report",
+            "assumption_proposal"
+          ],
+          "entry_gates": [
+            "assumption-set-ready-for-human-decision"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "normalize-requirement-v1",
+          "impact": "high",
+          "name": "Human-approved normalization of the ambiguous request",
+          "produces": [
+            "normalized_requirement_v1"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "brownfield-analyst",
+          "consumes": [
+            "normalized_requirement_v1"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "preserve-core-scope",
+          "impact": "low",
+          "name": "Confirm unchanged URL-shortener core scope",
+          "produces": [
+            "core_scope_assurance"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "privacy-analyst",
+          "consumes": [
+            "ambiguity_report",
+            "assumption_proposal"
+          ],
+          "entry_gates": [
+            "human-privacy-clarification-present"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "normalize-requirement-v2",
+          "impact": "low",
+          "name": "Normalize the human privacy clarification as requirement v2",
+          "produces": [
+            "normalized_requirement_v2"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "solution-architect",
+          "consumes": [
+            "normalized_requirement_v2"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "design-analytics-change",
+          "impact": "low",
+          "name": "Design coarse, non-identifying daily analytics",
+          "produces": [
+            "analytics_design"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "analytics_design"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "plan-analytics-tests",
+          "impact": "low",
+          "name": "Plan analytics and privacy validation",
+          "produces": [
+            "analytics_test_plan"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "analytics_design"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "plan-analytics-documentation",
+          "impact": "low",
+          "name": "Plan contract and limitation documentation",
+          "produces": [
+            "analytics_documentation_plan"
+          ],
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "delivery-lead",
+          "consumes": [
+            "analytics_test_plan",
+            "analytics_documentation_plan"
+          ],
+          "entry_gates": [
+            "parallel-plans-complete-and-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "join-analytics-plans",
+          "impact": "low",
+          "name": "Synchronize analytics test and documentation plans",
+          "produces": [
+            "joined_analytics_plan"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "privacy-owner",
+          "consumes": [
+            "joined_analytics_plan"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "clarify-analytics-privacy",
+          "impact": "high",
+          "name": "Human clarification of analytics privacy and scope",
+          "produces": [
+            "clarification_record"
+          ],
+          "stage": "release_readiness",
+          "state": "succeeded"
+        },
+        {
+          "capability": "backend-engineer",
+          "consumes": [
+            "clarification_record",
+            "joined_analytics_plan",
+            "core_scope_assurance"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "implement-coarse-analytics",
+          "impact": "high",
+          "name": "Implement UTC daily click aggregates without client identity",
+          "produces": [
+            "analytics_implementation"
+          ],
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "analytics_implementation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "validate-coarse-analytics",
+          "impact": "low",
+          "name": "Validate aggregation precision and prohibited-data absence",
+          "produces": [
+            "analytics_validation"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "analytics_implementation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "document-coarse-analytics",
+          "impact": "low",
+          "name": "Document the v2 analytics contract and precision limits",
+          "produces": [
+            "analytics_contract_documentation"
+          ],
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-owner",
+          "consumes": [
+            "analytics_validation",
+            "analytics_contract_documentation"
+          ],
+          "entry_gates": [
+            "v2-quality-evidence-complete"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "final-quality-approval",
+          "impact": "high",
+          "name": "Human final quality approval against requirement v2",
+          "produces": [
+            "final_quality_record"
+          ],
+          "stage": "release_readiness",
+          "state": "succeeded"
+        }
+      ],
+      "revision": 2,
+      "supersedes": 1
+    }
+  ]
+}

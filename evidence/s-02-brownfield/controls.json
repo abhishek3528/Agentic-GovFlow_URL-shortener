@@ -1,0 +1,146 @@
+{
+  "approvals": [
+    {
+      "actor": {
+        "id": "reviewer:s02-change-owner",
+        "kind": "human"
+      },
+      "decided_at": "2026-01-01T00:00:45+00:00",
+      "granted": true,
+      "id": "approval-0001",
+      "rationale": "impact analysis, red regression, and non-breaking change contract reviewed",
+      "task_id": "apply-collision-idempotency-fix"
+    }
+  ],
+  "gate_results": [
+    {
+      "evaluated_at": "2026-01-01T00:00:11+00:00",
+      "gate_id": "s01-baseline-and-repository-present",
+      "kind": "entry",
+      "passed": true,
+      "reason": "S-01 baseline and repository sources are present",
+      "task_id": "analyze-baseline-impact"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:17+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "analyze-baseline-impact"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:21+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "reproduce-collision-idempotency-defect"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:27+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "reproduce-collision-idempotency-defect"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:31+00:00",
+      "gate_id": "impact-and-red-required-before-planning",
+      "kind": "entry",
+      "passed": true,
+      "reason": "repository impact and red regression evidence precede change planning",
+      "task_id": "plan-gated-fix"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:36+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "plan-gated-fix"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:40+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "apply-collision-idempotency-fix"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:52+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "apply-collision-idempotency-fix"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:00:57+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "validate-fixed-behavior"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:08+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "validate-fixed-behavior"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:11+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-reliability-change"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:16+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "document-reliability-change"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:20+00:00",
+      "gate_id": "green-proof-and-docs-required",
+      "kind": "entry",
+      "passed": true,
+      "reason": "green regression proof and documentation synchronized",
+      "task_id": "synchronize-before-after-proof"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:28+00:00",
+      "gate_id": "declared-outputs-present",
+      "kind": "exit",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "synchronize-before-after-proof"
+    },
+    {
+      "evaluated_at": "2026-01-01T00:01:32+00:00",
+      "gate_id": "declared-inputs-fresh",
+      "kind": "entry",
+      "passed": true,
+      "reason": "declared evidence is complete and fresh",
+      "task_id": "verify-release-candidate"
+    }
+  ],
+  "policy_decisions": [
+    {
+      "effect": "allow",
+      "evaluated_at": "2026-01-01T00:00:08+00:00",
+      "policy_id": "change-control",
+      "reason": "non-breaking change is classified as 'high'",
+      "task_id": "apply-collision-idempotency-fix"
+    }
+  ]
+}

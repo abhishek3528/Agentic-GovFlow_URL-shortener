@@ -1,0 +1,72 @@
+[
+  {
+    "acceptance_checks": [
+      "assumptions require human approval before normalization executes",
+      "test and documentation planning fork and join",
+      "material privacy clarification creates requirement v2",
+      "only affected analytics descendants are invalidated",
+      "stale v1 artifacts remain in history and cannot be consumed",
+      "v2 privacy, change-control, validation, and quality gates pass"
+    ],
+    "ambiguities": [
+      {
+        "consequence_if_wrong": "The result may be less granular than stakeholders expect.",
+        "id": "analytics-dimension",
+        "proposed_assumption": "Add a UTC calendar-day aggregate only.",
+        "question": "Which analytics dimension should be added, and at what precision?"
+      },
+      {
+        "consequence_if_wrong": "A more permissive choice would create privacy and retention risk.",
+        "id": "privacy-retention",
+        "proposed_assumption": "Store no client identifiers and derive only bounded aggregates.",
+        "question": "May raw client identifiers be stored, and for how long?"
+      },
+      {
+        "consequence_if_wrong": "The change could ship without a measurable quality threshold.",
+        "id": "acceptance-threshold",
+        "proposed_assumption": "Counts must group deterministically across two UTC days.",
+        "question": "What observable result proves the analytics improvement?"
+      },
+      {
+        "consequence_if_wrong": "Unbounded scope would invalidate delivery and privacy estimates.",
+        "id": "scope-boundary",
+        "proposed_assumption": "Keep the existing API and SQLite service; add no tracking platform.",
+        "question": "Does improve include geolocation, fingerprinting, or a new platform?"
+      }
+    ],
+    "assumptions": [
+      "Add a UTC calendar-day aggregate only.",
+      "Store no client identifiers and derive only bounded aggregates.",
+      "Counts must group deterministically across two UTC days.",
+      "Keep the existing API and SQLite service; add no tracking platform."
+    ],
+    "change_reason": null,
+    "created_at": "2026-01-01T00:00:01+00:00",
+    "normalized_problem": "Add one bounded analytics dimension after explicit human clarification.",
+    "raw_requirement": "Improve link analytics.",
+    "supersedes": null,
+    "version": 1
+  },
+  {
+    "acceptance_checks": [
+      "daily counts group correctly across two UTC dates",
+      "aggregate totals remain consistent",
+      "the click schema contains no raw client identifier column",
+      "v1 context, plan, events, and artifacts remain reviewable",
+      "unaffected core-scope evidence remains fresh",
+      "final human quality approval references context v2"
+    ],
+    "ambiguities": [],
+    "assumptions": [
+      "UTC calendar day is the only new precision dimension.",
+      "No IP address, user-agent, cookie, session, device, or client id is retained.",
+      "The existing API, SQLite persistence, and core link behavior remain in scope."
+    ],
+    "change_reason": "Privacy owner clarified that raw client identifiers are prohibited and analytics precision is limited to UTC calendar-day counts.",
+    "created_at": "2026-01-01T00:01:35+00:00",
+    "normalized_problem": "Expose bounded UTC daily click counts while retaining no raw client identifiers.",
+    "raw_requirement": "Improve link analytics.",
+    "supersedes": 1,
+    "version": 2
+  }
+]

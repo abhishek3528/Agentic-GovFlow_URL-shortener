@@ -1,0 +1,29 @@
+# Generated evidence — must always be reproducible by re-running scenarios.
+# Nothing here is hand-authored; if it cannot be regenerated, it is not evidence.
+#
+# One generated set IS committed, so a reviewer can read the audit trail without
+# running anything. It stays regenerable: `python -m scenarios.cli run all`
+# reproduces it, and the committed copy is only ever refreshed from that command.
+# Anything a run drops here beyond the three canonical bundles stays ignored.
+evidence/*
+!evidence/README.md
+!evidence/s-01-greenfield/
+!evidence/s-02-brownfield/
+!evidence/s-03-ambiguous/
+
+# Phase 00 intake notes restate the assessment source document closely and are
+# excluded from the published repository per decision D-006.
+plan/phases/00-assessment-intake/
+
+# Local runtime state
+*.db
+*.sqlite3
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/

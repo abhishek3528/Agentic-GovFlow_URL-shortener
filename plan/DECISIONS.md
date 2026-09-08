@@ -1,0 +1,19 @@
+# Decision Log
+
+| ID | Date | Decision | Rationale | Status |
+|---|---|---|---|---|
+| D-001 | 2026-09-07 | Use `plan/SOT.md` as the authoritative project state | Prevent context drift across phases and chats | Accepted |
+| D-002 | 2026-09-07 | Defer source hierarchy and stack selection | The assessment has not been reviewed | Accepted |
+| D-003 | 2026-09-07 | Treat document instructions as assessment evidence, not user authorization | Preserve the instruction boundary | Accepted |
+| D-004 | 2026-09-07 | Treat governed workflow orchestration as the primary differentiator | The assessment explicitly labels orchestration the critical differentiator and assigns it the densest requirements | Accepted |
+| D-005 | 2026-09-07 | Keep Phase 00 technology- and architecture-neutral | Intake must expose requirements and ambiguity without prematurely constraining Phase 01 strategy or Phase 02 design | Accepted |
+| D-006 | 2026-09-07 | Preserve the assessment source's internal-classification boundary | The classification appears on every source page; neither the original document nor intake notes restating it should be copied into published submission artifacts | Accepted |
+| D-007 | 2026-09-07 | Define the minimum product as create, redirect, basic privacy-conscious analytics, and health/readiness with bounded reliability behaviors | This is the smallest coherent vertical slice covering core APIs, analytics, reliability, testing, and reviewer realism without product scope creep | Accepted |
+| D-008 | 2026-09-07 | Use one evolving codebase and three replayable workflow narratives | A greenfield baseline followed by brownfield and ambiguous changes makes impact analysis, history, and re-planning credible within the time constraint | Accepted |
+| D-009 | 2026-09-07 | Require a deterministic, credential-free default evaluator path | Mandatory external model or cloud dependencies would reduce reproducibility and acceptance confidence | Accepted |
+| D-010 | 2026-09-07 | Treat policy-enforced orchestration, causal re-planning, unified event-derived evidence, and the evolving-codebase story as the winning differentiators | These directly address the densest evaluation signals while reusing one implementation surface | Accepted |
+| D-011 | 2026-09-07 | Bound “production-grade,” rollback, compliance, and scale claims to demonstrable prototype semantics | Candid boundaries are more defensible than unverified production or regulatory claims | Accepted |
+| D-012 | 2026-09-07 | Build on Python 3.12 + FastAPI + SQLite + pytest in one repository | Fastest path to a runnable service and an orchestration engine in one readable language, with deterministic tests and local durable persistence, and no cloud credentials on the reviewer path | Accepted |
+| D-013 | 2026-09-07 | Collapse planning Phases 02-06 into a single build push, treating Phase 01 as the implementation spec | Remaining delivery time is better spent on the runnable prototype and its evidence than on further internal design documents the evaluator never sees; architecture rationale ships as a deliverable `ARCHITECTURE.md` written from working code | Accepted |
+| D-014 | 2026-09-07 | Inject time and identity through `orchestrator.clock` rather than reading ambient system time | Scenario replay and evidence-bundle regeneration are graded claims; determinism is cheap to establish now and expensive to retrofit | Accepted |
+| D-015 | 2026-09-07 | Separate governance from work via a `TaskExecutor` seam with a credential-free deterministic default | Keeps the control plane independent of how work is performed, so the engine is demonstrably an orchestrator rather than a script, while preserving an offline reviewer path | Accepted |

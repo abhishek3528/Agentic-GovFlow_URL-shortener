@@ -1,0 +1,62 @@
+{
+  "files": [
+    {
+      "description": "terminal scenario result and evidence pointer",
+      "path": "result.json",
+      "sha256": "2369d39dcf8d0e9807c304c71126157c885742eed1a913e94a5a5de76eaf0317"
+    },
+    {
+      "description": "original and revised requirement contexts",
+      "path": "context_versions.json",
+      "sha256": "517b53ee4ba6f4f9f86225d30b6cef278aa9d33e1a5b0da78aba08fe409a4dc1"
+    },
+    {
+      "description": "versioned task plans with gates and I/O contracts",
+      "path": "plans.json",
+      "sha256": "f1aba1b702429834c1728ae1a8306961d7886a6bcc4f480f7fefc61105e34c7b"
+    },
+    {
+      "description": "dependency and artifact-flow graph by plan revision",
+      "path": "graph.json",
+      "sha256": "5220df4364bc47e33f690eebafb37248b9934f572ab0b18eade48fca56659d2e"
+    },
+    {
+      "description": "artifact provenance, freshness, and content hashes",
+      "path": "artifacts.json",
+      "sha256": "a8d365d20e1dfc43cec9a32f067874757403c6dc66f6d03570b2aea3ef40ac54"
+    },
+    {
+      "description": "attributed engineering decision lineage",
+      "path": "decisions.json",
+      "sha256": "606038125b667c15cd763c11f173393a5734772c95bf3aa3a9d01ff538bf5ff0"
+    },
+    {
+      "description": "gate, policy, and human-approval outcomes",
+      "path": "controls.json",
+      "sha256": "338161e8de570193e01a798fdb2601021cb667f261c66e257ee4ffb6880736de"
+    },
+    {
+      "description": "reliability metrics projected from events",
+      "path": "metrics.json",
+      "sha256": "1b09a213cf9393ec52435dcce60c63f4925380d989ce56b32a3ea2721a638390"
+    },
+    {
+      "description": "append-only correlated event history",
+      "path": "events.jsonl",
+      "sha256": "e5f93b4ff7c1c49a37de7c0df74d77edef9ea2176bdca736f754f89f3d06db5d"
+    }
+  ],
+  "reviewable_outputs": {
+    "analytics_contract": "app/models.py",
+    "analytics_endpoint": "app/main.py",
+    "analytics_repository": "app/repository.py",
+    "api_tests": "tests/test_shortener_api.py",
+    "scenario_tests": "tests/test_ambiguous_scenario.py",
+    "service_tests": "tests/test_shortener_service.py"
+  },
+  "run_id": "s-03-ambiguous",
+  "scenario_id": "s-03",
+  "schema_version": 1,
+  "state": "succeeded",
+  "terminal_reason": "Requirement v2 shipped UTC-day analytics after selective invalidation, re-applied controls, complete validation, and human quality approval."
+}

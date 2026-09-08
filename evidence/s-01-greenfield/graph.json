@@ -1,0 +1,233 @@
+{
+  "revisions": [
+    {
+      "artifact_flows": [
+        {
+          "artifact": "normalized_requirement",
+          "producer": "normalize-requirement"
+        },
+        {
+          "artifact": "service_design",
+          "producer": "design-baseline"
+        },
+        {
+          "artifact": "api_contract",
+          "producer": "design-baseline"
+        },
+        {
+          "artifact": "core_implementation",
+          "producer": "implement-core"
+        },
+        {
+          "artifact": "analytics_reliability_implementation",
+          "producer": "implement-analytics-reliability"
+        },
+        {
+          "artifact": "integrated_validation",
+          "producer": "integrated-validation"
+        },
+        {
+          "artifact": "smoke_result",
+          "producer": "integrated-validation"
+        },
+        {
+          "artifact": "operator_guide",
+          "producer": "document-baseline"
+        },
+        {
+          "artifact": "release_readiness_record",
+          "producer": "release-readiness"
+        }
+      ],
+      "context_version": 1,
+      "dependency_edges": [
+        {
+          "from": "normalize-requirement",
+          "to": "design-baseline"
+        },
+        {
+          "from": "design-baseline",
+          "to": "implement-core"
+        },
+        {
+          "from": "design-baseline",
+          "to": "implement-analytics-reliability"
+        },
+        {
+          "from": "implement-core",
+          "to": "integrated-validation"
+        },
+        {
+          "from": "implement-analytics-reliability",
+          "to": "integrated-validation"
+        },
+        {
+          "from": "design-baseline",
+          "to": "document-baseline"
+        },
+        {
+          "from": "integrated-validation",
+          "to": "document-baseline"
+        },
+        {
+          "from": "integrated-validation",
+          "to": "release-readiness"
+        },
+        {
+          "from": "document-baseline",
+          "to": "release-readiness"
+        }
+      ],
+      "nodes": [
+        {
+          "capability": "business-analyst",
+          "consumes": [],
+          "entry_gates": [
+            "requirement-structure"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "normalize-requirement",
+          "impact": "low",
+          "name": "Normalize greenfield requirement",
+          "produces": [
+            "normalized_requirement"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "solution-architect",
+          "consumes": [
+            "normalized_requirement"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "design-baseline",
+          "impact": "low",
+          "name": "Define service and API design",
+          "produces": [
+            "service_design",
+            "api_contract"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "backend-engineer",
+          "consumes": [
+            "service_design",
+            "api_contract"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "implement-core",
+          "impact": "low",
+          "name": "Implement create and redirect path",
+          "produces": [
+            "core_implementation"
+          ],
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "reliability-engineer",
+          "consumes": [
+            "service_design",
+            "api_contract"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "implement-analytics-reliability",
+          "impact": "low",
+          "name": "Implement analytics and health path",
+          "produces": [
+            "analytics_reliability_implementation"
+          ],
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "core_implementation",
+            "analytics_reliability_implementation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "integrated-validation",
+          "impact": "low",
+          "name": "Run unit, integration, contract, and smoke validation",
+          "produces": [
+            "integrated_validation",
+            "smoke_result"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "api_contract",
+            "integrated_validation"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "document-baseline",
+          "impact": "low",
+          "name": "Publish baseline usage and validation references",
+          "produces": [
+            "operator_guide"
+          ],
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "release-manager",
+          "consumes": [
+            "api_contract",
+            "integrated_validation",
+            "operator_guide"
+          ],
+          "entry_gates": [
+            "release-evidence-complete"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "release-readiness",
+          "impact": "high",
+          "name": "Human release-readiness review",
+          "produces": [
+            "release_readiness_record"
+          ],
+          "stage": "release_readiness",
+          "state": "succeeded"
+        }
+      ],
+      "revision": 1,
+      "supersedes": null
+    }
+  ]
+}

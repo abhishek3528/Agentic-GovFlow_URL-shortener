@@ -1,0 +1,26 @@
+[
+  {
+    "actor": {
+      "id": "agent:s03-orchestrator",
+      "kind": "agent"
+    },
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:06+00:00",
+    "id": "decision-0001",
+    "rationale": "The request omits dimension, privacy, retention, threshold, and scope decisions.",
+    "summary": "Propose a minimal analytics assumption set; do not silently normalize",
+    "task_id": "surface-analytics-ambiguities"
+  },
+  {
+    "actor": {
+      "id": "reviewer:s03-privacy-owner",
+      "kind": "human"
+    },
+    "context_version": 2,
+    "created_at": "2026-01-01T00:02:15+00:00",
+    "id": "decision-0002",
+    "rationale": "The privacy clarification is material to analytics design, tests, documentation, implementation, and quality approval, but not to the retained core service scope.",
+    "summary": "Adopt UTC-day aggregates and prohibit raw client identity in requirement v2",
+    "task_id": "design-analytics-change"
+  }
+]

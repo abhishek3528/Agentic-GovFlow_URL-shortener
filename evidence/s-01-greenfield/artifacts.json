@@ -1,0 +1,133 @@
+[
+  {
+    "content_hash": "e6b702f355097df614d4caa948ab71b9fb7123237ebeb9756de9f048f9a6b660",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:16+00:00",
+    "derived_from": [],
+    "id": "artifact-0001",
+    "name": "normalized_requirement",
+    "path": null,
+    "produced_by_task": "normalize-requirement",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "7f6339d131d782d349694fad94ba33fa9d9c6b5f721a00c20c8dacd0d4367559",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:25+00:00",
+    "derived_from": [
+      "artifact-0001"
+    ],
+    "id": "artifact-0002",
+    "name": "service_design",
+    "path": null,
+    "produced_by_task": "design-baseline",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "7cb049278ea1880d75deb040ff42728ea0bd7b37a8d3685b66d024642185bc62",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:27+00:00",
+    "derived_from": [
+      "artifact-0001"
+    ],
+    "id": "artifact-0003",
+    "name": "api_contract",
+    "path": null,
+    "produced_by_task": "design-baseline",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "28e34d0437620c6b99003a5e4c2b4d900b4c692f7e3e11d221e8bf500e318336",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:37+00:00",
+    "derived_from": [
+      "artifact-0002",
+      "artifact-0003"
+    ],
+    "id": "artifact-0004",
+    "name": "core_implementation",
+    "path": null,
+    "produced_by_task": "implement-core",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "6c45894418c0036d992009ceebccca32560c2270f1535c15d42a4c8f373b0f1d",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:45+00:00",
+    "derived_from": [
+      "artifact-0002",
+      "artifact-0003"
+    ],
+    "id": "artifact-0005",
+    "name": "analytics_reliability_implementation",
+    "path": null,
+    "produced_by_task": "implement-analytics-reliability",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "278a3200662cb614acc44335b7f05fd63fd48c2b4d56eefa9001bd29323581a6",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:57+00:00",
+    "derived_from": [
+      "artifact-0004",
+      "artifact-0005"
+    ],
+    "id": "artifact-0006",
+    "name": "integrated_validation",
+    "path": null,
+    "produced_by_task": "integrated-validation",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "59f6b00093d0497565772762c7ab8c97ce3083362cb414b49f1bd32c1b22204e",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:00:59+00:00",
+    "derived_from": [
+      "artifact-0004",
+      "artifact-0005"
+    ],
+    "id": "artifact-0007",
+    "name": "smoke_result",
+    "path": null,
+    "produced_by_task": "integrated-validation",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "154efbee422dcf1e4417843462722e0cdad1173ace39e21a4381cbccfaf00014",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:18+00:00",
+    "derived_from": [
+      "artifact-0003",
+      "artifact-0006"
+    ],
+    "id": "artifact-0008",
+    "name": "operator_guide",
+    "path": null,
+    "produced_by_task": "document-baseline",
+    "stale": false,
+    "version": 1
+  },
+  {
+    "content_hash": "3d42c5f78535235423f9243b5e703ac32b77a5d8db039376dca1c979325b04fc",
+    "context_version": 1,
+    "created_at": "2026-01-01T00:01:33+00:00",
+    "derived_from": [
+      "artifact-0003",
+      "artifact-0006",
+      "artifact-0008"
+    ],
+    "id": "artifact-0009",
+    "name": "release_readiness_record",
+    "path": null,
+    "produced_by_task": "release-readiness",
+    "stale": false,
+    "version": 1
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "acceptance_checks": [
+      "create -> redirect -> analytics smoke path passes",
+      "invalid, collision, idempotency, not-found, health, readiness, and OpenAPI checks pass",
+      "implementation forks and joins before integrated validation",
+      "one transient failure recovers within one retry",
+      "javascript URL fixture is denied while safe work continues",
+      "release-readiness requires an attributable human approval"
+    ],
+    "ambiguities": [],
+    "assumptions": [
+      "The deterministic credential-free executor is the reviewer path.",
+      "Basic analytics retain click timestamps but no raw client identifiers.",
+      "A scripted human release-manager fixture represents the attributable release decision."
+    ],
+    "change_reason": null,
+    "created_at": "2026-01-01T00:00:00+00:00",
+    "normalized_problem": "Deliver the bounded FastAPI/SQLite URL-shortener baseline through a governed SDLC DAG and retain replayable evidence.",
+    "raw_requirement": "Establish a URL-shortener baseline that creates and redirects short URLs, reports basic privacy-conscious analytics, exposes health and readiness, publishes OpenAPI, and validates collision and idempotency behavior.",
+    "supersedes": null,
+    "version": 1
+  }
+]

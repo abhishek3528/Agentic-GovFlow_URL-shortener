@@ -1,0 +1,248 @@
+{
+  "revisions": [
+    {
+      "artifact_flows": [
+        {
+          "artifact": "impact_analysis",
+          "producer": "analyze-baseline-impact"
+        },
+        {
+          "artifact": "red_regression",
+          "producer": "reproduce-collision-idempotency-defect"
+        },
+        {
+          "artifact": "change_contract",
+          "producer": "plan-gated-fix"
+        },
+        {
+          "artifact": "fix_implementation",
+          "producer": "apply-collision-idempotency-fix"
+        },
+        {
+          "artifact": "green_regression",
+          "producer": "validate-fixed-behavior"
+        },
+        {
+          "artifact": "regression_report",
+          "producer": "validate-fixed-behavior"
+        },
+        {
+          "artifact": "change_documentation",
+          "producer": "document-reliability-change"
+        },
+        {
+          "artifact": "before_after_proof",
+          "producer": "synchronize-before-after-proof"
+        },
+        {
+          "artifact": "release_verification",
+          "producer": "verify-release-candidate"
+        }
+      ],
+      "context_version": 1,
+      "dependency_edges": [
+        {
+          "from": "analyze-baseline-impact",
+          "to": "reproduce-collision-idempotency-defect"
+        },
+        {
+          "from": "reproduce-collision-idempotency-defect",
+          "to": "plan-gated-fix"
+        },
+        {
+          "from": "plan-gated-fix",
+          "to": "apply-collision-idempotency-fix"
+        },
+        {
+          "from": "apply-collision-idempotency-fix",
+          "to": "validate-fixed-behavior"
+        },
+        {
+          "from": "apply-collision-idempotency-fix",
+          "to": "document-reliability-change"
+        },
+        {
+          "from": "validate-fixed-behavior",
+          "to": "synchronize-before-after-proof"
+        },
+        {
+          "from": "document-reliability-change",
+          "to": "synchronize-before-after-proof"
+        },
+        {
+          "from": "synchronize-before-after-proof",
+          "to": "verify-release-candidate"
+        }
+      ],
+      "nodes": [
+        {
+          "capability": "brownfield-analyst",
+          "consumes": [],
+          "entry_gates": [
+            "s01-baseline-and-repository-present"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "analyze-baseline-impact",
+          "impact": "low",
+          "name": "Inspect S-01 repository impact before change planning",
+          "produces": [
+            "impact_analysis"
+          ],
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "impact_analysis"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "reproduce-collision-idempotency-defect",
+          "impact": "low",
+          "name": "Run red collision/idempotency regression fixture",
+          "produces": [
+            "red_regression"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "solution-architect",
+          "consumes": [
+            "impact_analysis",
+            "red_regression"
+          ],
+          "entry_gates": [
+            "impact-and-red-required-before-planning"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "plan-gated-fix",
+          "impact": "low",
+          "name": "Plan the bounded reliability correction",
+          "produces": [
+            "change_contract"
+          ],
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "capability": "backend-engineer",
+          "consumes": [
+            "change_contract"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "apply-collision-idempotency-fix",
+          "impact": "high",
+          "name": "Apply the repository ordering correction",
+          "produces": [
+            "fix_implementation"
+          ],
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "quality-engineer",
+          "consumes": [
+            "fix_implementation",
+            "change_contract"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "validate-fixed-behavior",
+          "impact": "low",
+          "name": "Run focused and regression validation",
+          "produces": [
+            "green_regression",
+            "regression_report"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "technical-writer",
+          "consumes": [
+            "fix_implementation",
+            "change_contract"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "document-reliability-change",
+          "impact": "low",
+          "name": "Document the bounded behavior change",
+          "produces": [
+            "change_documentation"
+          ],
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "capability": "release-quality-engineer",
+          "consumes": [
+            "red_regression",
+            "green_regression",
+            "regression_report",
+            "change_documentation"
+          ],
+          "entry_gates": [
+            "green-proof-and-docs-required"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "synchronize-before-after-proof",
+          "impact": "low",
+          "name": "Join red, green, regression, and documentation evidence",
+          "produces": [
+            "before_after_proof"
+          ],
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "capability": "release-engineer",
+          "consumes": [
+            "before_after_proof"
+          ],
+          "entry_gates": [
+            "declared-inputs-fresh"
+          ],
+          "exit_gates": [
+            "declared-outputs-present"
+          ],
+          "id": "verify-release-candidate",
+          "impact": "low",
+          "name": "Verify the brownfield release candidate",
+          "produces": [
+            "release_verification"
+          ],
+          "stage": "release_readiness",
+          "state": "compensated"
+        }
+      ],
+      "revision": 1,
+      "supersedes": null
+    }
+  ]
+}

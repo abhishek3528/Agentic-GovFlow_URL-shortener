@@ -1,0 +1,456 @@
+{
+  "artifacts": [
+    {
+      "content_hash": "e6b702f355097df614d4caa948ab71b9fb7123237ebeb9756de9f048f9a6b660",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:16+00:00",
+      "derived_from": [],
+      "id": "artifact-0001",
+      "name": "normalized_requirement",
+      "path": null,
+      "produced_by_task": "normalize-requirement",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "7f6339d131d782d349694fad94ba33fa9d9c6b5f721a00c20c8dacd0d4367559",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:25+00:00",
+      "derived_from": [
+        "artifact-0001"
+      ],
+      "id": "artifact-0002",
+      "name": "service_design",
+      "path": null,
+      "produced_by_task": "design-baseline",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "7cb049278ea1880d75deb040ff42728ea0bd7b37a8d3685b66d024642185bc62",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:27+00:00",
+      "derived_from": [
+        "artifact-0001"
+      ],
+      "id": "artifact-0003",
+      "name": "api_contract",
+      "path": null,
+      "produced_by_task": "design-baseline",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "28e34d0437620c6b99003a5e4c2b4d900b4c692f7e3e11d221e8bf500e318336",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:37+00:00",
+      "derived_from": [
+        "artifact-0002",
+        "artifact-0003"
+      ],
+      "id": "artifact-0004",
+      "name": "core_implementation",
+      "path": null,
+      "produced_by_task": "implement-core",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "6c45894418c0036d992009ceebccca32560c2270f1535c15d42a4c8f373b0f1d",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:45+00:00",
+      "derived_from": [
+        "artifact-0002",
+        "artifact-0003"
+      ],
+      "id": "artifact-0005",
+      "name": "analytics_reliability_implementation",
+      "path": null,
+      "produced_by_task": "implement-analytics-reliability",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "278a3200662cb614acc44335b7f05fd63fd48c2b4d56eefa9001bd29323581a6",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:57+00:00",
+      "derived_from": [
+        "artifact-0004",
+        "artifact-0005"
+      ],
+      "id": "artifact-0006",
+      "name": "integrated_validation",
+      "path": null,
+      "produced_by_task": "integrated-validation",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "59f6b00093d0497565772762c7ab8c97ce3083362cb414b49f1bd32c1b22204e",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:59+00:00",
+      "derived_from": [
+        "artifact-0004",
+        "artifact-0005"
+      ],
+      "id": "artifact-0007",
+      "name": "smoke_result",
+      "path": null,
+      "produced_by_task": "integrated-validation",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "154efbee422dcf1e4417843462722e0cdad1173ace39e21a4381cbccfaf00014",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:18+00:00",
+      "derived_from": [
+        "artifact-0003",
+        "artifact-0006"
+      ],
+      "id": "artifact-0008",
+      "name": "operator_guide",
+      "path": null,
+      "produced_by_task": "document-baseline",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "3d42c5f78535235423f9243b5e703ac32b77a5d8db039376dca1c979325b04fc",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:33+00:00",
+      "derived_from": [
+        "artifact-0003",
+        "artifact-0006",
+        "artifact-0008"
+      ],
+      "id": "artifact-0009",
+      "name": "release_readiness_record",
+      "path": null,
+      "produced_by_task": "release-readiness",
+      "stale": false,
+      "version": 1
+    }
+  ],
+  "completed_at": "2026-01-01T00:01:39+00:00",
+  "context_versions": [
+    {
+      "acceptance_checks": [
+        "create -> redirect -> analytics smoke path passes",
+        "invalid, collision, idempotency, not-found, health, readiness, and OpenAPI checks pass",
+        "implementation forks and joins before integrated validation",
+        "one transient failure recovers within one retry",
+        "javascript URL fixture is denied while safe work continues",
+        "release-readiness requires an attributable human approval"
+      ],
+      "ambiguities": [],
+      "assumptions": [
+        "The deterministic credential-free executor is the reviewer path.",
+        "Basic analytics retain click timestamps but no raw client identifiers.",
+        "A scripted human release-manager fixture represents the attributable release decision."
+      ],
+      "change_reason": null,
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "normalized_problem": "Deliver the bounded FastAPI/SQLite URL-shortener baseline through a governed SDLC DAG and retain replayable evidence.",
+      "raw_requirement": "Establish a URL-shortener baseline that creates and redirects short URLs, reports basic privacy-conscious analytics, exposes health and readiness, publishes OpenAPI, and validates collision and idempotency behavior.",
+      "supersedes": null,
+      "version": 1
+    }
+  ],
+  "decisions": [
+    {
+      "actor": {
+        "id": "agent:s01-orchestrator",
+        "kind": "agent"
+      },
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:06+00:00",
+      "id": "decision-0001",
+      "rationale": "It provides a production-shaped vertical slice while keeping the reviewer path local, bounded, and credential-free.",
+      "summary": "Use a deterministic FastAPI and SQLite baseline",
+      "task_id": "design-baseline"
+    }
+  ],
+  "evidence_path": "evidence/s-01-greenfield",
+  "limitations": [
+    "The release approval is a deterministic human-attributed fixture, not an external identity-provider interaction.",
+    "The smoke path uses FastAPI's in-process test client; the separate live-server suite covers process startup."
+  ],
+  "metrics": {
+    "approvals_requested": 1,
+    "end_to_end_seconds": 97.0,
+    "gate_denials": 0,
+    "mttr_seconds": 19.0,
+    "policy_denials": 1,
+    "replans": 0,
+    "retry_count": 1,
+    "retry_rate": 0.14285714285714285,
+    "rollback_count": 0,
+    "rollback_rate": 0.0,
+    "success_rate": 1.0,
+    "tasks_failed": 0,
+    "tasks_succeeded": 7,
+    "tasks_total": 7
+  },
+  "plans": [
+    {
+      "change_reason": null,
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:01+00:00",
+      "revision": 1,
+      "supersedes": null,
+      "tasks": [
+        {
+          "attempts": 1,
+          "capability": "business-analyst",
+          "compensation": null,
+          "consumes": [],
+          "depends_on": [],
+          "entry_gates": [
+            {
+              "description": "The request names the required product outcomes.",
+              "id": "requirement-structure",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "normalize-requirement",
+          "impact": "low",
+          "name": "Normalize greenfield requirement",
+          "produces": [
+            "normalized_requirement"
+          ],
+          "retry_budget": 0,
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "solution-architect",
+          "compensation": null,
+          "consumes": [
+            "normalized_requirement"
+          ],
+          "depends_on": [
+            "normalize-requirement"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input exists and is fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "design-baseline",
+          "impact": "low",
+          "name": "Define service and API design",
+          "produces": [
+            "service_design",
+            "api_contract"
+          ],
+          "retry_budget": 0,
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "backend-engineer",
+          "compensation": null,
+          "consumes": [
+            "service_design",
+            "api_contract"
+          ],
+          "depends_on": [
+            "design-baseline"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input exists and is fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "implement-core",
+          "impact": "low",
+          "name": "Implement create and redirect path",
+          "produces": [
+            "core_implementation"
+          ],
+          "retry_budget": 0,
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "reliability-engineer",
+          "compensation": null,
+          "consumes": [
+            "service_design",
+            "api_contract"
+          ],
+          "depends_on": [
+            "design-baseline"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input exists and is fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "implement-analytics-reliability",
+          "impact": "low",
+          "name": "Implement analytics and health path",
+          "produces": [
+            "analytics_reliability_implementation"
+          ],
+          "retry_budget": 0,
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 2,
+          "capability": "quality-engineer",
+          "compensation": null,
+          "consumes": [
+            "core_implementation",
+            "analytics_reliability_implementation"
+          ],
+          "depends_on": [
+            "implement-core",
+            "implement-analytics-reliability"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input exists and is fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "integrated-validation",
+          "impact": "low",
+          "name": "Run unit, integration, contract, and smoke validation",
+          "produces": [
+            "integrated_validation",
+            "smoke_result"
+          ],
+          "retry_budget": 1,
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "technical-writer",
+          "compensation": null,
+          "consumes": [
+            "api_contract",
+            "integrated_validation"
+          ],
+          "depends_on": [
+            "design-baseline",
+            "integrated-validation"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input exists and is fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "document-baseline",
+          "impact": "low",
+          "name": "Publish baseline usage and validation references",
+          "produces": [
+            "operator_guide"
+          ],
+          "retry_budget": 0,
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "release-manager",
+          "compensation": null,
+          "consumes": [
+            "api_contract",
+            "integrated_validation",
+            "operator_guide"
+          ],
+          "depends_on": [
+            "integrated-validation",
+            "document-baseline"
+          ],
+          "entry_gates": [
+            {
+              "description": "Integrated validation, documentation, and API contract are present.",
+              "id": "release-evidence-complete",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output is present before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "release-readiness",
+          "impact": "high",
+          "name": "Human release-readiness review",
+          "produces": [
+            "release_readiness_record"
+          ],
+          "retry_budget": 0,
+          "stage": "release_readiness",
+          "state": "succeeded"
+        }
+      ]
+    }
+  ],
+  "run_id": "s-01-greenfield",
+  "scenario_id": "s-01",
+  "started_at": "2026-01-01T00:00:02+00:00",
+  "state": "succeeded",
+  "terminal_reason": "all tasks succeeded"
+}

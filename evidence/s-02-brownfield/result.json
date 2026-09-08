@@ -1,0 +1,473 @@
+{
+  "artifacts": [
+    {
+      "content_hash": "a9195b12a788b9c81c71fc408feb9719e750fecfd39f6b07e1c38af93c1067ff",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:14+00:00",
+      "derived_from": [],
+      "id": "artifact-0001",
+      "name": "impact_analysis",
+      "path": null,
+      "produced_by_task": "analyze-baseline-impact",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "fcf28da271914c76c17432993aae749510d6d72d211b02ed1060469ec24132fb",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:24+00:00",
+      "derived_from": [
+        "artifact-0001"
+      ],
+      "id": "artifact-0002",
+      "name": "red_regression",
+      "path": null,
+      "produced_by_task": "reproduce-collision-idempotency-defect",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "e52675ff72b5a25696f6600155429b42d2297da16f2078f004a98c18ea51591f",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:34+00:00",
+      "derived_from": [
+        "artifact-0001",
+        "artifact-0002"
+      ],
+      "id": "artifact-0003",
+      "name": "change_contract",
+      "path": null,
+      "produced_by_task": "plan-gated-fix",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "c49b9542d7b007da57b7cfd5c3cee05a1d880ed206310836d185c52cee9e84cf",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:49+00:00",
+      "derived_from": [
+        "artifact-0003"
+      ],
+      "id": "artifact-0004",
+      "name": "fix_implementation",
+      "path": null,
+      "produced_by_task": "apply-collision-idempotency-fix",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "7ee8790e1f1bfb6831d79452fb6dc0f63be6a6e68d222eb952e5da290fba2399",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:00+00:00",
+      "derived_from": [
+        "artifact-0004",
+        "artifact-0003"
+      ],
+      "id": "artifact-0005",
+      "name": "green_regression",
+      "path": null,
+      "produced_by_task": "validate-fixed-behavior",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "b99b8526c64de6228753906e97fd218496bc41c1f43ec33150acb84f51adde5c",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:02+00:00",
+      "derived_from": [
+        "artifact-0004",
+        "artifact-0003"
+      ],
+      "id": "artifact-0006",
+      "name": "regression_report",
+      "path": null,
+      "produced_by_task": "validate-fixed-behavior",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "5851c6be7faa91a0649e114d305c9fecfeef68f41a3b7a32a69e98cb2990cedc",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:14+00:00",
+      "derived_from": [
+        "artifact-0004",
+        "artifact-0003"
+      ],
+      "id": "artifact-0007",
+      "name": "change_documentation",
+      "path": null,
+      "produced_by_task": "document-reliability-change",
+      "stale": false,
+      "version": 1
+    },
+    {
+      "content_hash": "7515cc4c54d12e9ad7fa665a33e77906a34b7b689b8ce1146d572b5b39351305",
+      "context_version": 1,
+      "created_at": "2026-01-01T00:01:23+00:00",
+      "derived_from": [
+        "artifact-0002",
+        "artifact-0005",
+        "artifact-0006",
+        "artifact-0007"
+      ],
+      "id": "artifact-0008",
+      "name": "before_after_proof",
+      "path": null,
+      "produced_by_task": "synchronize-before-after-proof",
+      "stale": false,
+      "version": 1
+    }
+  ],
+  "completed_at": "2026-01-01T00:01:43+00:00",
+  "context_versions": [
+    {
+      "acceptance_checks": [
+        "repository impact analysis and a red fixture precede change planning",
+        "the fix requires change-control evaluation and human approval",
+        "focused validation proves red-to-green collision/idempotency behavior",
+        "validation and documentation fork then synchronize",
+        "persistent release verification exhausts one retry",
+        "registered compensation restores the S-01 candidate and the run safe-stops"
+      ],
+      "ambiguities": [],
+      "assumptions": [
+        "S-01 baseline run 's-01-greenfield' is the brownfield starting point.",
+        "The legacy regression fixture represents code-first allocation before the correction.",
+        "Release-candidate state restoration is bounded to an in-memory scenario pointer."
+      ],
+      "change_reason": null,
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "normalized_problem": "Preserve destination idempotency across deterministic short-code collisions, with impact-first planning and governed recovery evidence.",
+      "raw_requirement": "Correct collision/idempotency reliability without changing the HTTP contract; perform repository impact analysis and reproduce the defect before planning, then provide gated red-to-green and regression evidence.",
+      "supersedes": null,
+      "version": 1
+    }
+  ],
+  "decisions": [
+    {
+      "actor": {
+        "id": "agent:s02-orchestrator",
+        "kind": "agent"
+      },
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:06+00:00",
+      "id": "decision-0001",
+      "rationale": "Repository inspection shows the idempotency boundary belongs in SqliteLinkRepository.create_or_get before candidate allocation.",
+      "summary": "Use destination-first lookup as the bounded reliability correction",
+      "task_id": "plan-gated-fix"
+    }
+  ],
+  "evidence_path": "evidence/s-02-brownfield",
+  "limitations": [
+    "Compensation restores the scenario-owned release-candidate pointer; it does not perform source-control, database, or deployment rollback.",
+    "The red fixture executes the former code-first allocation behavior while the green fixture exercises the current SQLite repository."
+  ],
+  "metrics": {
+    "approvals_requested": 1,
+    "end_to_end_seconds": 101.0,
+    "gate_denials": 0,
+    "mttr_seconds": 5.0,
+    "policy_denials": 0,
+    "replans": 0,
+    "retry_count": 1,
+    "retry_rate": 0.125,
+    "rollback_count": 1,
+    "rollback_rate": 0.125,
+    "success_rate": 0.875,
+    "tasks_failed": 1,
+    "tasks_succeeded": 7,
+    "tasks_total": 8
+  },
+  "plans": [
+    {
+      "change_reason": null,
+      "context_version": 1,
+      "created_at": "2026-01-01T00:00:01+00:00",
+      "revision": 1,
+      "supersedes": null,
+      "tasks": [
+        {
+          "attempts": 1,
+          "capability": "brownfield-analyst",
+          "compensation": null,
+          "consumes": [],
+          "depends_on": [],
+          "entry_gates": [
+            {
+              "description": "The successful S-01 baseline and cited repository sources must exist.",
+              "id": "s01-baseline-and-repository-present",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "analyze-baseline-impact",
+          "impact": "low",
+          "name": "Inspect S-01 repository impact before change planning",
+          "produces": [
+            "impact_analysis"
+          ],
+          "retry_budget": 0,
+          "stage": "requirements",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "quality-engineer",
+          "compensation": null,
+          "consumes": [
+            "impact_analysis"
+          ],
+          "depends_on": [
+            "analyze-baseline-impact"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input must exist and be fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "reproduce-collision-idempotency-defect",
+          "impact": "low",
+          "name": "Run red collision/idempotency regression fixture",
+          "produces": [
+            "red_regression"
+          ],
+          "retry_budget": 0,
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "solution-architect",
+          "compensation": null,
+          "consumes": [
+            "impact_analysis",
+            "red_regression"
+          ],
+          "depends_on": [
+            "reproduce-collision-idempotency-defect"
+          ],
+          "entry_gates": [
+            {
+              "description": "Repository impact analysis and a failing legacy regression fixture gate planning.",
+              "id": "impact-and-red-required-before-planning",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "plan-gated-fix",
+          "impact": "low",
+          "name": "Plan the bounded reliability correction",
+          "produces": [
+            "change_contract"
+          ],
+          "retry_budget": 0,
+          "stage": "design",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "backend-engineer",
+          "compensation": null,
+          "consumes": [
+            "change_contract"
+          ],
+          "depends_on": [
+            "plan-gated-fix"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input must exist and be fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "apply-collision-idempotency-fix",
+          "impact": "high",
+          "name": "Apply the repository ordering correction",
+          "produces": [
+            "fix_implementation"
+          ],
+          "retry_budget": 0,
+          "stage": "implementation",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "quality-engineer",
+          "compensation": null,
+          "consumes": [
+            "fix_implementation",
+            "change_contract"
+          ],
+          "depends_on": [
+            "apply-collision-idempotency-fix"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input must exist and be fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "validate-fixed-behavior",
+          "impact": "low",
+          "name": "Run focused and regression validation",
+          "produces": [
+            "green_regression",
+            "regression_report"
+          ],
+          "retry_budget": 0,
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "technical-writer",
+          "compensation": null,
+          "consumes": [
+            "fix_implementation",
+            "change_contract"
+          ],
+          "depends_on": [
+            "apply-collision-idempotency-fix"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input must exist and be fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "document-reliability-change",
+          "impact": "low",
+          "name": "Document the bounded behavior change",
+          "produces": [
+            "change_documentation"
+          ],
+          "retry_budget": 0,
+          "stage": "documentation",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 1,
+          "capability": "release-quality-engineer",
+          "compensation": null,
+          "consumes": [
+            "red_regression",
+            "green_regression",
+            "regression_report",
+            "change_documentation"
+          ],
+          "depends_on": [
+            "validate-fixed-behavior",
+            "document-reliability-change"
+          ],
+          "entry_gates": [
+            {
+              "description": "Focused green proof and updated documentation must synchronize before validation.",
+              "id": "green-proof-and-docs-required",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "synchronize-before-after-proof",
+          "impact": "low",
+          "name": "Join red, green, regression, and documentation evidence",
+          "produces": [
+            "before_after_proof"
+          ],
+          "retry_budget": 0,
+          "stage": "testing",
+          "state": "succeeded"
+        },
+        {
+          "attempts": 2,
+          "capability": "release-engineer",
+          "compensation": "restore-s01-release-candidate",
+          "consumes": [
+            "before_after_proof"
+          ],
+          "depends_on": [
+            "synchronize-before-after-proof"
+          ],
+          "entry_gates": [
+            {
+              "description": "Every declared input must exist and be fresh.",
+              "id": "declared-inputs-fresh",
+              "kind": "entry"
+            }
+          ],
+          "exit_gates": [
+            {
+              "description": "Every declared output must exist before task success.",
+              "id": "declared-outputs-present",
+              "kind": "exit"
+            }
+          ],
+          "id": "verify-release-candidate",
+          "impact": "low",
+          "name": "Verify the brownfield release candidate",
+          "produces": [
+            "release_verification"
+          ],
+          "retry_budget": 1,
+          "stage": "release_readiness",
+          "state": "compensated"
+        }
+      ]
+    }
+  ],
+  "run_id": "s-02-brownfield",
+  "scenario_id": "s-02",
+  "started_at": "2026-01-01T00:00:02+00:00",
+  "state": "safe_stopped",
+  "terminal_reason": "Persistent release verification exhausted its retry budget; the registered handler restored the S-01 release candidate and the run safe-stopped."
+}
