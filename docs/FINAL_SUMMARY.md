@@ -56,7 +56,7 @@ success label. Terminal safe-stop cannot later transition to success
 
 ## Validation
 
-The final suite contains **184 passing tests**, including **90 adversarial tests**
+The final suite contains **187 passing tests**, including **93 adversarial tests**
 in `tests/test_governance_negative.py`. The full command is documented in
 `docs/TESTING.md`.
 

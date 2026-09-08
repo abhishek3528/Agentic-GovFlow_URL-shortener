@@ -11,9 +11,8 @@ from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from orchestrator.clock import Clock, SystemClock
-
 from .codes import CodeGenerator, Sha256CodeGenerator
+from .clock import Clock, SystemClock
 from .models import (
     ClickEventResponse,
     CreateLinkRequest,

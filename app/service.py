@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from orchestrator.clock import Clock
-
 from .codes import CodeGenerator
+from .clock import Clock
 from .repository import LinkRecord, LinkStatsRecord, SqliteLinkRepository
 
 

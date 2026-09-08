@@ -31,6 +31,9 @@ across refactors of lanes A-C.
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -792,6 +795,96 @@ def test_compensation_runs_before_the_safe_stop() -> None:
     assert EventType.COMPENSATION_EXECUTED in types
     assert types.index(EventType.COMPENSATION_EXECUTED) < types.index(EventType.SAFE_STOP_TRIGGERED)
     assert governed.metrics.rollback_count == 1
+
+
+# ==========================================================================
+# 5a. The product does not depend on the control plane
+#
+# README §2: "the orchestration layer is the deliverable; the URL shortener is
+# the realistic engineering work it governs." That is a claim about the
+# direction of dependency, and a direction is only real while something checks
+# it -- an import added in a hurry reverses it silently and nothing fails.
+# ==========================================================================
+
+
+def test_the_service_does_not_import_the_orchestrator() -> None:
+    """Nothing under ``app/`` may import ``orchestrator``.
+
+    The engine governs the product; the product must stay independently
+    runnable without it. ``app/clock.py`` exists precisely so this holds -- it
+    duplicates a few lines rather than reaching across the boundary.
+
+    Checked by reading the source rather than the import graph, so it catches a
+    deferred import inside a function as well as a module-level one.
+    """
+    app_dir = Path(__file__).resolve().parent.parent / "app"
+    offenders: list[str] = []
+    for module in sorted(app_dir.glob("*.py")):
+        source = module.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(module))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                offenders += [
+                    f"{module.name}:{node.lineno} import {alias.name}"
+                    for alias in node.names
+                    if alias.name.split(".")[0] == "orchestrator"
+                ]
+            elif isinstance(node, ast.ImportFrom):
+                root = (node.module or "").split(".")[0]
+                if node.level == 0 and root == "orchestrator":
+                    offenders.append(f"{module.name}:{node.lineno} from {node.module}")
+
+    assert not offenders, (
+        "the product now depends on the control plane that governs it: "
+        + "; ".join(offenders)
+    )
+
+
+def test_the_orchestrator_does_not_import_the_service() -> None:
+    """And the dependency must not be circular in the other direction either.
+
+    The engine is deliberately ignorant of what the work is. If `orchestrator/`
+    imported `app/`, the `TaskExecutor` seam would be decorative — the control
+    plane would be coupled to one specific product.
+    """
+    orch_dir = Path(__file__).resolve().parent.parent / "orchestrator"
+    offenders: list[str] = []
+    for module in sorted(orch_dir.rglob("*.py")):
+        tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                offenders += [
+                    f"{module.name}:{node.lineno} import {alias.name}"
+                    for alias in node.names
+                    if alias.name.split(".")[0] == "app"
+                ]
+            elif isinstance(node, ast.ImportFrom):
+                if node.level == 0 and (node.module or "").split(".")[0] == "app":
+                    offenders.append(f"{module.name}:{node.lineno} from {node.module}")
+
+    assert not offenders, (
+        "the control plane now depends on the product it governs: " + "; ".join(offenders)
+    )
+
+
+def test_import_boundary_check_is_load_bearing() -> None:
+    """The detector must actually detect. A checker that never fires is not one.
+
+    Both tests above pass by finding nothing, which is exactly how a broken
+    checker also passes. This runs the same AST walk against source that does
+    import the orchestrator, and requires it to be caught.
+    """
+    sample = "from orchestrator.clock import Clock\nimport orchestrator.engine\n"
+    tree = ast.parse(sample)
+    found = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            found += [a.name for a in node.names if a.name.split(".")[0] == "orchestrator"]
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0 and (node.module or "").split(".")[0] == "orchestrator":
+                found.append(node.module or "")
+
+    assert len(found) == 2, f"the import detector missed a violation: {found}"
 
 
 def test_metrics_are_reproducible_from_the_event_stream_alone() -> None:
