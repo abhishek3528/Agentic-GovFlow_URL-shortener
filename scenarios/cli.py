@@ -8,7 +8,9 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from orchestrator.contracts import RunResult
+from orchestrator.clock import deterministic_pair
+from orchestrator.contracts import ContextVersion, Plan, RunResult
+from orchestrator.planner import derive_plan
 from scenarios.approvals import InteractiveApprovalProvider
 from scenarios.runner import (
     DEFAULT_EVIDENCE_ROOT,
@@ -27,6 +29,12 @@ def _parser() -> argparse.ArgumentParser:
 
     listing = subcommands.add_parser("list", help="list available scenarios")
     listing.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+
+    plan = subcommands.add_parser(
+        "plan", help="derive a deterministic governed SDLC plan from a requirement"
+    )
+    plan.add_argument("requirement", help="plain-language engineering requirement")
+    plan.add_argument("--json", action="store_true", help="emit machine-readable JSON")
 
     run = subcommands.add_parser("run", help="run one scenario or the full chain")
     run.add_argument("scenario", help="scenario id/alias, or 'all'")
@@ -97,6 +105,27 @@ def _show_results(results: Sequence[RunResult], *, as_json: bool) -> None:
         )
 
 
+def _show_plan(plan: Plan, *, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(plan.model_dump(mode="json"), indent=2, sort_keys=True))
+        return
+
+    print(f"Plan revision {plan.revision} (context v{plan.context_version})")
+    for task in plan.tasks:
+        dependencies = ", ".join(task.depends_on) or "none"
+        print(f"\n{task.id}: {task.name}")
+        print(f"  stage: {task.stage.value}")
+        print(f"  capability: {task.capability}")
+        print(f"  dependencies: {dependencies}")
+        print(f"  impact: {task.impact.value}")
+        if not task.entry_gates and not task.exit_gates:
+            print("  gates: none")
+            continue
+        print("  gates:")
+        for gate in (*task.entry_gates, *task.exit_gates):
+            print(f"    {gate.kind.value}: {gate.id} - {gate.description}")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the ``govflow`` command and return a process exit status."""
 
@@ -104,6 +133,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser.parse_args(argv)
     if arguments.command is None:
         parser.print_help()
+        return 0
+
+    if arguments.command == "plan":
+        # The command is a reproducible demonstration artifact.  Its injected
+        # clock starts from the same instant on every invocation so identical
+        # requirement text produces byte-identical JSON across processes.
+        clock, _ = deterministic_pair()
+        normalized = " ".join(arguments.requirement.split())
+        context = ContextVersion(
+            version=1,
+            raw_requirement=arguments.requirement,
+            normalized_problem=normalized,
+            created_at=clock.iso(),
+        )
+        plan = derive_plan(context, created_at=clock.iso())
+        _show_plan(plan, as_json=arguments.json)
         return 0
 
     if (

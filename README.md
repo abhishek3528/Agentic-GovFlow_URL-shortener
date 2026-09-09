@@ -260,7 +260,7 @@ with a content hash.
 ### Run the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/ -q      # 205 tests
+.venv\Scripts\python.exe -m pytest tests/ -q      # 218 tests
 ```
 
 ### Run the service
@@ -733,7 +733,7 @@ quality approval referencing the revised requirement version.
 
 ## 8. Test approach and evidence
 
-**205 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
+**218 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
 per-file coverage.
 
 ### The paired-control convention
@@ -913,7 +913,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 205 tests; `docs/`; [browser client](#14-browser-client) |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 218 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -945,7 +945,7 @@ orchestrator/            the control plane
 scenarios/               greenfield.py, brownfield.py, ambiguous.py,
                          runner.py, cli.py
 
-tests/                   205 tests; test_governance_negative.py is the
+tests/                   218 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md
