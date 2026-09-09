@@ -32,6 +32,7 @@ across refactors of lanes A-C.
 from __future__ import annotations
 
 import ast
+import io
 from pathlib import Path
 
 import pytest
@@ -66,6 +67,11 @@ from orchestrator.executor import DeterministicExecutor, ScriptedFailureExecutor
 from orchestrator.graph import DependencyGraph, GraphValidationError
 from orchestrator.policy import PolicyEngine
 from orchestrator.recovery import RecoveryAction, RecoveryController, compute_run_metrics
+from scenarios.approvals import (
+    InteractiveApprovalError,
+    InteractiveApprovalProvider,
+    ScriptedApprovalProvider,
+)
 
 T0 = "2026-01-01T00:00:00+00:00"
 T1 = "2026-01-02T00:00:00+00:00"
@@ -430,6 +436,172 @@ def test_a_withheld_approval_blocks_rather_than_proceeds() -> None:
     assert governed.task("release").state is TaskState.BLOCKED
     assert governed.run_state is not RunState.SUCCEEDED
     assert not governed.artifacts
+
+
+class FakeTerminal(io.StringIO):
+    """A stream that claims to be a terminal, so the TTY guard can be exercised."""
+
+    def isatty(self) -> bool:
+        return True
+
+
+def paused_release_engine() -> Engine:
+    governed = engine(
+        task("release", impact=ImpactClass.HIGH, produces=("release_note",),
+             stage=Stage.RELEASE_READINESS),
+    )
+    governed.run(actor=AGENT)
+    assert governed.task("release").state is TaskState.AWAITING_APPROVAL
+    return governed
+
+
+def test_an_approval_provider_cannot_supply_a_non_human_decision() -> None:
+    """The provider seam must not become a way in for an agent decision.
+
+    Scenario code chooses the provider, so the provider is untrusted from the
+    engine's point of view. A provider that skips validation -- by construction,
+    by deserialising a stored record, or by being written carelessly -- must be
+    refused at the point the decision is applied, not merely at the point the
+    record is built.
+    """
+    governed = paused_release_engine()
+    forged = Approval.model_construct(
+        id="approval-forged",
+        task_id="release",
+        granted=True,
+        actor=AGENT,
+        rationale="supplied by a provider that skipped validation",
+        decided_at=T0,
+    )
+
+    try:
+        governed.decide_approval(forged)
+    except (EngineError, ValidationError, ValueError):
+        pass
+
+    assert governed.task("release").state is TaskState.AWAITING_APPROVAL
+    assert governed.run_state is not RunState.SUCCEEDED
+
+
+def test_the_interactive_provider_always_attributes_a_human_actor() -> None:
+    """Whatever is typed, the recorded actor kind must be HUMAN.
+
+    Someone typing an agent-looking name must not be able to produce a record
+    the engine would later read as anything other than a human decision.
+    """
+    terminal = FakeTerminal("agent:planner\nlooks like an agent\ny\n")
+    provider = InteractiveApprovalProvider(input_stream=terminal, output_stream=io.StringIO())
+
+    approval = provider.decide(
+        task_id="release", impact="high", summary="release readiness",
+        default_actor=HUMAN, default_rationale="unused",
+        approval_id="approval-1", decided_at=T0,
+    )
+
+    assert approval.actor.kind is ActorKind.HUMAN
+    assert approval.granted is True
+    assert approval.rationale == "looks like an agent"
+
+
+def test_the_interactive_provider_refuses_a_non_terminal_input() -> None:
+    """No TTY means no human. It must refuse rather than read whatever is piped.
+
+    Reading a pipe would let `echo y | govflow run ... --interactive-approvals`
+    manufacture an approval with nobody present, which is precisely the bypass
+    the checkpoint exists to prevent.
+    """
+    piped = io.StringIO("reviewer\nlooks fine\ny\n")  # a plain StringIO is not a TTY
+    provider = InteractiveApprovalProvider(input_stream=piped, output_stream=io.StringIO())
+
+    with pytest.raises(InteractiveApprovalError):
+        provider.decide(
+            task_id="release", impact="high", summary="release readiness",
+            default_actor=HUMAN, default_rationale="unused",
+            approval_id="approval-1", decided_at=T0,
+        )
+
+
+def test_the_interactive_provider_fails_closed_when_input_ends() -> None:
+    """A closed stdin must raise, never fall back to granting."""
+    terminal = FakeTerminal("reviewer\n")  # name given, then EOF before the decision
+    provider = InteractiveApprovalProvider(input_stream=terminal, output_stream=io.StringIO())
+
+    with pytest.raises(InteractiveApprovalError):
+        provider.decide(
+            task_id="release", impact="high", summary="release readiness",
+            default_actor=HUMAN, default_rationale="unused",
+            approval_id="approval-1", decided_at=T0,
+        )
+
+
+def test_a_human_denial_through_the_provider_blocks_the_release() -> None:
+    """Declining at the terminal is a governed outcome, not a crash.
+
+    The scenarios used to assert on the resulting run state, so a real denial
+    would have raised AssertionError. Withholding approval has to end the run in
+    its denied state instead -- that is what makes the checkpoint meaningful
+    rather than a formality that only ever says yes.
+    """
+    terminal = FakeTerminal("alex\nrelease evidence incomplete\nn\n")
+    provider = InteractiveApprovalProvider(input_stream=terminal, output_stream=io.StringIO())
+    governed = paused_release_engine()
+
+    approval = provider.decide(
+        task_id="release", impact="high", summary="release readiness",
+        default_actor=HUMAN, default_rationale="unused",
+        approval_id="approval-1", decided_at=T0,
+    )
+    assert approval.granted is False
+
+    governed.decide_approval(approval)
+
+    assert governed.task("release").state is TaskState.BLOCKED
+    assert governed.run_state is not RunState.SUCCEEDED
+    assert not governed.artifacts
+
+
+def test_interactive_approval_control_is_load_bearing() -> None:
+    """A granted decision through the same provider must release the task.
+
+    Without this, every refusal above could be explained by the interactive path
+    simply not working.
+    """
+    terminal = FakeTerminal("alex\nrelease checklist reviewed\ny\n")
+    provider = InteractiveApprovalProvider(input_stream=terminal, output_stream=io.StringIO())
+    governed = paused_release_engine()
+
+    approval = provider.decide(
+        task_id="release", impact="high", summary="release readiness",
+        default_actor=HUMAN, default_rationale="unused",
+        approval_id="approval-1", decided_at=T0,
+    )
+
+    assert governed.decide_approval(approval) is RunState.SUCCEEDED
+    assert governed.task("release").state is TaskState.SUCCEEDED
+
+
+def test_the_scripted_provider_is_deterministic() -> None:
+    """The default provider must return exactly what it was given.
+
+    Byte-stable evidence depends on it: if the scripted provider varied its
+    actor, rationale or id, every committed bundle would change on re-run and
+    the reproducibility claim would quietly stop being true.
+    """
+    provider = ScriptedApprovalProvider()
+    made = [
+        provider.decide(
+            task_id="release", impact="high", summary="release readiness",
+            default_actor=HUMAN, default_rationale="reviewed",
+            approval_id="approval-0001", decided_at=T0,
+        )
+        for _ in range(3)
+    ]
+
+    assert all(a == made[0] for a in made)
+    assert made[0].granted is True
+    assert made[0].actor == HUMAN
+    assert made[0].rationale == "reviewed"
+    assert made[0].id == "approval-0001"
 
 
 def test_an_approval_for_another_task_does_not_release_this_one() -> None:

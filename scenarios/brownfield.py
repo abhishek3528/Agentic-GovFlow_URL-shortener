@@ -20,7 +20,6 @@ from orchestrator.clock import deterministic_pair
 from orchestrator.contracts import (
     Actor,
     ActorKind,
-    Approval,
     Artifact,
     ContextVersion,
     Decision,
@@ -37,6 +36,7 @@ from orchestrator.engine import OrchestrationEngine
 from orchestrator.executor import DeterministicExecutor, TaskFailure, TaskOutput
 from orchestrator.policy import CHANGE_CONTROL_POLICY, PolicyEngine
 from orchestrator.recovery import RecoveryController
+from scenarios.approvals import ApprovalProvider
 from scenarios.runner import ScenarioContext, ScenarioError, ScenarioExecution, ScenarioSpec
 
 
@@ -524,7 +524,15 @@ def _executor(
     return _PersistentReleaseFailureExecutor(inner)
 
 
-def execute(context: ScenarioContext) -> ScenarioExecution:
+def execute(
+    context: ScenarioContext,
+    approval_provider: ApprovalProvider | None = None,
+) -> ScenarioExecution:
+    approval_provider = (
+        approval_provider
+        if approval_provider is not None
+        else context.approval_provider
+    )
     baseline = context.prior_results.get("s-01")
     if baseline is None or baseline.state is not RunState.SUCCEEDED:
         raise ScenarioError("S-02 requires a successful S-01 baseline result")
@@ -618,15 +626,25 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
 
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL
     assert engine.task("apply-collision-idempotency-fix").state is TaskState.AWAITING_APPROVAL
-    approval = Approval(
-        id=ids.next_id("approval"),
+    approval = approval_provider.decide(
         task_id="apply-collision-idempotency-fix",
-        granted=True,
-        actor=HUMAN_CHANGE_OWNER,
-        rationale="impact analysis, red regression, and non-breaking change contract reviewed",
+        impact=engine.task("apply-collision-idempotency-fix").impact.value,
+        summary=engine.task("apply-collision-idempotency-fix").name,
+        default_actor=HUMAN_CHANGE_OWNER,
+        default_rationale="impact analysis, red regression, and non-breaking change contract reviewed",
+        approval_id=ids.next_id("approval"),
         decided_at=clock.iso(),
     )
-    assert engine.decide_approval(approval) is RunState.SAFE_STOPPED
+    terminal_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return ScenarioExecution(
+            engine=engine,
+            terminal_reason=(
+                f"Human approval denied for '{approval.task_id}' by "
+                f"'{approval.actor.id}': {approval.rationale}"
+            ),
+        )
+    assert terminal_state is RunState.SAFE_STOPPED
     assert release_state == {"active_candidate": baseline.run_id, "restored": True}
     assert engine.task("verify-release-candidate").state is TaskState.COMPENSATED
     assert engine.metrics.retry_count == 1

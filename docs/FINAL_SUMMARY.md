@@ -56,7 +56,7 @@ success label. Terminal safe-stop cannot later transition to success
 
 ## Validation
 
-The final suite contains **187 passing tests**, including **93 adversarial tests**
+The final suite contains **194 passing tests**, including **100 adversarial tests**
 in `tests/test_governance_negative.py`. The full command is documented in
 `docs/TESTING.md`.
 
@@ -80,10 +80,15 @@ leaves the `tmp/s01-smoke-*` directory count unchanged
   a credible restart-safe product slice, not multi-node scale or a production
   SLO. Restart persistence is checked by
   `tests/test_shortener_service.py::test_links_survive_repository_restart`.
-- Human decisions in scenarios are deterministic, human-attributed fixtures;
-  they are not backed by an external identity provider. The invariant that an
-  agent cannot grant approval is nevertheless enforced by
-  `tests/test_governance_negative.py::test_engine_refuses_an_agent_granted_approval`.
+- Human decisions default to deterministic, human-attributed fixtures, because
+  byte-reproducible evidence depends on them. `--interactive-approvals` makes a
+  run stop at every checkpoint and wait for a real person, who supplies a name,
+  a rationale, and a decision — but no approval is backed by an external
+  identity provider, so the recorded reviewer is a self-declared name rather
+  than an authenticated one. The invariant that an agent cannot grant approval
+  holds on both paths
+  (`tests/test_governance_negative.py::test_engine_refuses_an_agent_granted_approval`,
+  `::test_an_approval_provider_cannot_supply_a_non_human_decision`).
 - Compensation demonstrates named workflow state restoration, not general
   source-control, deployment, or database rollback. Ordering before safe-stop is
   checked by `tests/test_governance_negative.py::test_compensation_runs_before_the_safe_stop`.

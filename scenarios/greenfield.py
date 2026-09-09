@@ -19,7 +19,6 @@ from orchestrator.clock import deterministic_pair
 from orchestrator.contracts import (
     Actor,
     ActorKind,
-    Approval,
     Artifact,
     ContextVersion,
     Decision,
@@ -35,6 +34,7 @@ from orchestrator.contracts import (
 from orchestrator.engine import OrchestrationEngine
 from orchestrator.executor import DeterministicExecutor, ScriptedFailureExecutor, TaskOutput
 from orchestrator.policy import URL_SAFETY_POLICY, PolicyEngine
+from scenarios.approvals import ApprovalProvider, ScriptedApprovalProvider
 from scenarios.runner import ScenarioContext, ScenarioExecution, ScenarioSpec
 
 
@@ -275,7 +275,10 @@ def _smoke_validation(workspace: Path) -> dict[str, bool]:
     return checks
 
 
-def _executor(workspace: Path) -> ScriptedFailureExecutor:
+def _executor(
+    workspace: Path,
+    participants: dict[str, str],
+) -> ScriptedFailureExecutor:
     def normalize(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
         return TaskOutput(
             summary="well-defined request normalized",
@@ -381,7 +384,7 @@ def _executor(workspace: Path) -> ScriptedFailureExecutor:
             artifacts={
                 "release_readiness_record": _json(
                     {
-                        "approved_by": HUMAN_RELEASE_MANAGER.id,
+                        "approved_by": participants["release_approver"],
                         "evidence": sorted(inputs),
                         "status": "ready for baseline review",
                     }
@@ -403,8 +406,17 @@ def _executor(workspace: Path) -> ScriptedFailureExecutor:
     return ScriptedFailureExecutor(inner, failures={"integrated-validation": 1})
 
 
-def execute(context: ScenarioContext) -> ScenarioExecution:
+def execute(
+    context: ScenarioContext,
+    approval_provider: ApprovalProvider | None = None,
+) -> ScenarioExecution:
+    approval_provider = (
+        approval_provider
+        if approval_provider is not None
+        else context.approval_provider
+    )
     clock, ids = deterministic_pair()
+    participants = {"release_approver": HUMAN_RELEASE_MANAGER.id}
     requirement = ContextVersion(
         version=1,
         raw_requirement=RAW_REQUIREMENT,
@@ -430,7 +442,7 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
     plan = build_plan(created_at=clock.iso())
     engine = OrchestrationEngine(
         plan,
-        _executor(context.workspace),
+        _executor(context.workspace, participants),
         clock=clock,
         id_gen=ids,
         run_id=RUN_ID,
@@ -467,20 +479,35 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
 
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL
     assert engine.task("release-readiness").state is TaskState.AWAITING_APPROVAL
-    approval = Approval(
-        id=ids.next_id("approval"),
+    approval = approval_provider.decide(
         task_id="release-readiness",
-        granted=True,
-        actor=HUMAN_RELEASE_MANAGER,
-        rationale="integrated validation, API contract, and operator evidence reviewed",
+        impact=engine.task("release-readiness").impact.value,
+        summary=engine.task("release-readiness").name,
+        default_actor=HUMAN_RELEASE_MANAGER,
+        default_rationale="integrated validation, API contract, and operator evidence reviewed",
+        approval_id=ids.next_id("approval"),
         decided_at=clock.iso(),
     )
-    assert engine.decide_approval(approval) is RunState.SUCCEEDED
+    participants["release_approver"] = approval.actor.id
+    terminal_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return ScenarioExecution(
+            engine=engine,
+            terminal_reason=(
+                f"Human approval denied for '{approval.task_id}' by "
+                f"'{approval.actor.id}': {approval.rationale}"
+            ),
+        )
+    assert terminal_state is RunState.SUCCEEDED
 
     return ScenarioExecution(
         engine=engine,
         limitations=(
-            "The release approval is a deterministic human-attributed fixture, not an external identity-provider interaction.",
+            (
+                "The release approval is a deterministic human-attributed fixture, not an external identity-provider interaction."
+                if isinstance(approval_provider, ScriptedApprovalProvider)
+                else "The interactive reviewer identity is self-asserted and is not verified by an external identity provider."
+            ),
             "The smoke path uses FastAPI's in-process test client; the separate live-server suite covers process startup.",
         ),
         reviewable_outputs={

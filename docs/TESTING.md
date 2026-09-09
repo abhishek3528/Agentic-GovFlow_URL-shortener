@@ -8,7 +8,7 @@ The required command is:
 D:\URL-Project\.venv\Scripts\python.exe -m pytest tests/ -q
 ```
 
-It collects and passes **187 tests**. **93** are in
+It collects and passes **194 tests**. **100** are in
 `tests/test_governance_negative.py`.
 
 ## Coverage by file
@@ -20,7 +20,7 @@ It collects and passes **187 tests**. **93** are in
 | `tests/test_graph.py` | 3 | Deterministic topology/frontiers/descendants, cycle and unknown-dependency rejection, and artifact-producer ancestry. |
 | `tests/test_engine.py` | 7 | Fork/join execution, illegal and direct transition rejection, missing join output, missing gate evaluator, deterministic replay, and selective re-plan history. |
 | `tests/test_events.py` | 4 | Per-run sequence assignment, append-only JSONL rehydration, rejected replay/gaps, and deep immutability of stored history. |
-| `tests/test_governance_negative.py` | 93 | Independent adversarial checks for state, approval, join, freshness, recovery, fallback, policies, append-only history, selective re-planning, and the product/control-plane import boundary, including load-bearing controls. |
+| `tests/test_governance_negative.py` | 100 | Independent adversarial checks for state, approval (scripted and interactive), join, freshness, recovery, fallback, policies, append-only history, selective re-planning, and the product/control-plane import boundary, including load-bearing controls. |
 | `tests/test_greenfield_scenario.py` | 4 | S-01 fork/join, human release gate, policy denial with permitted work, transient recovery, event-derived metrics, evidence export, and incomplete-requirement denial. |
 | `tests/test_brownfield_scenario.py` | 4 | S-02 repository impact before planning, red-to-green proof, gated high-impact fix, retry exhaustion, compensation-before-safe-stop, exact metrics, and evidence export. |
 | `tests/test_ambiguous_scenario.py` | 5 | S-03 ambiguity pause, parallel planning join, v1/v2 history, exact selective invalidation result, re-applied policies/gates, human quality approval, and exported re-plan evidence. |
@@ -29,7 +29,7 @@ It collects and passes **187 tests**. **93** are in
 | `tests/test_shortener_api.py` | 11 | HTTP create/redirect/stats, idempotency, collision, invalid/unsafe input, not-found, health/readiness, and OpenAPI. |
 | `tests/test_shortener_live.py` | 1 | Real Uvicorn process startup and the live create -> redirect -> stats smoke path. |
 
-The counts above sum to 187 and include parametrized cases as pytest collects
+The counts above sum to 194 and include parametrized cases as pytest collects
 them.
 
 ## Lane D: proving controls are load-bearing
@@ -52,6 +52,8 @@ Representative pairs are:
 | A stale artifact cannot be consumed | `test_consumer_cannot_execute_while_its_input_is_invalidated` | `test_stale_input_control_is_load_bearing` |
 | Retry exhaustion safe-stops, while recoverable work retries | `test_retry_exhaustion_safe_stops_and_never_claims_success` | `test_retry_budget_control_is_load_bearing` |
 | Unsafe URLs are denied while safe URLs and safe sibling work proceed | `test_url_safety_policy_denies_a_prohibited_destination` and `test_a_denied_task_is_blocked_while_permitted_work_completes` | `test_url_safety_control_is_load_bearing` and `test_policy_denial_control_is_load_bearing` |
+| An interactive approval refuses a non-terminal input rather than reading piped text, and fails closed on EOF | `test_the_interactive_provider_refuses_a_non_terminal_input` and `test_the_interactive_provider_fails_closed_when_input_ends` | `test_interactive_approval_control_is_load_bearing` |
+| A human denial blocks the release instead of crashing or quietly succeeding | `test_a_human_denial_through_the_provider_blocks_the_release` | `test_interactive_approval_control_is_load_bearing` |
 | The product never depends on the control plane that governs it | `test_the_service_does_not_import_the_orchestrator` | `test_import_boundary_check_is_load_bearing` |
 | A fallback is governed work, not an escape hatch — it cannot skip an exit gate | `test_a_fallback_cannot_bypass_an_exit_gate` | `test_fallback_exit_gate_control_is_load_bearing` |
 | Retry is exhausted before a fallback is attempted | `test_a_fallback_is_not_attempted_while_retries_remain` | `test_fallback_ordering_control_is_load_bearing` |

@@ -30,6 +30,7 @@ from orchestrator.contracts import (
     TERMINAL_RUN_STATES,
 )
 from orchestrator.engine import OrchestrationEngine
+from scenarios.approvals import ApprovalProvider, ScriptedApprovalProvider
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +59,7 @@ class ScenarioContext:
     workspace: Path
     evidence_root: Path
     prior_results: Mapping[str, RunResult]
+    approval_provider: ApprovalProvider = field(default_factory=ScriptedApprovalProvider)
 
 
 @dataclass(frozen=True)
@@ -323,9 +325,15 @@ class ScenarioRunner:
         *,
         workspace: str | Path = PROJECT_ROOT,
         evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+        approval_provider: ApprovalProvider | None = None,
     ) -> None:
         self.workspace = Path(workspace).resolve()
         self.exporter = EvidenceExporter(evidence_root)
+        self.approval_provider = (
+            approval_provider
+            if approval_provider is not None
+            else ScriptedApprovalProvider()
+        )
         self._scenarios: dict[str, ScenarioSpec] = {}
         self._aliases: dict[str, str] = {}
         self._results: dict[str, RunResult] = {}
@@ -382,9 +390,14 @@ class ScenarioRunner:
         return tuple(changed)
 
     def run_all(self, *, force: bool = False) -> tuple[RunResult, ...]:
+        results: list[RunResult] = []
         for spec in self.scenarios:
             self._run_spec(spec, force=force, active=())
-        return tuple(self._results[spec.scenario_id] for spec in self.scenarios)
+            result = self._results[spec.scenario_id]
+            results.append(result)
+            if result.state not in spec.acceptable_states:
+                break
+        return tuple(results)
 
     def _run_spec(
         self,
@@ -415,6 +428,7 @@ class ScenarioRunner:
             workspace=self.workspace,
             evidence_root=self.exporter.root,
             prior_results=MappingProxyType(dict(self._results)),
+            approval_provider=self.approval_provider,
         )
         try:
             raw_execution = spec.execute(context)
@@ -515,6 +529,7 @@ def default_runner(
     *,
     workspace: str | Path = PROJECT_ROOT,
     evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    approval_provider: ApprovalProvider | None = None,
 ) -> ScenarioRunner:
     """Create the standard runner populated with all available built-ins."""
 
@@ -522,6 +537,7 @@ def default_runner(
         load_builtin_scenarios(),
         workspace=workspace,
         evidence_root=evidence_root,
+        approval_provider=approval_provider,
     )
 
 

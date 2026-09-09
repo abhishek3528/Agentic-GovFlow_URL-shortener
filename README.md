@@ -256,7 +256,7 @@ with a content hash.
 ### Run the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/ -q      # 187 tests
+.venv\Scripts\python.exe -m pytest tests/ -q      # 194 tests
 ```
 
 ### Run the service
@@ -480,6 +480,36 @@ Three independent defences, because this is the invariant most worth attacking:
 A withheld approval is a denial, not a no-op: the task moves to `BLOCKED` and the
 run does not succeed.
 
+**Who supplies the decision is a seam.** Scenarios obtain approvals through an
+`ApprovalProvider` (`scenarios/approvals.py`). The default is scripted — a
+deterministic human-attributed fixture, which is what keeps evidence
+byte-reproducible. Pass `--interactive-approvals` and the run genuinely stops at
+each checkpoint and waits for a person:
+
+```powershell
+.venv\Scripts\python.exe -m scenarios.cli run s-01 --interactive-approvals
+```
+
+```
+Human approval required
+  Task: release-readiness
+  Impact: high
+  Approving: Human release-readiness review
+Approver name: _
+```
+
+It asks for a name, a rationale, and a yes or no. Answering **no** ends the run
+in its denied state and reports who declined and why — a denial is a governed
+outcome, not an error. The recorded actor is always `HUMAN`, whatever name is
+typed, and the run's own limitations note in the evidence bundle states whether
+the approval came from a real reviewer or from the fixture.
+
+Two refusals matter here. Without a terminal on standard input the provider
+**refuses to run at all** rather than reading whatever is piped — otherwise
+`echo y | govflow run ... --interactive-approvals` would manufacture an approval
+with nobody present. And if input ends mid-decision it raises rather than
+falling back to granting.
+
 ### 6.5 Retry, fallback, compensation, safe-stop
 
 Recovery is bounded by `Task.retry_budget` and chooses between four actions:
@@ -696,12 +726,12 @@ quality approval referencing the revised requirement version.
 
 ## 8. Test approach and evidence
 
-**187 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
+**194 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
 per-file coverage.
 
 ### The paired-control convention
 
-**93 of those tests are an adversarial negative suite** in
+**100 of those tests are an adversarial negative suite** in
 `tests/test_governance_negative.py`, written from the specification by an agent
 that did not implement the engine.
 
@@ -875,7 +905,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 187 tests; `docs/`; [browser client](#14-browser-client) |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 194 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -906,7 +936,7 @@ orchestrator/            the control plane
 scenarios/               greenfield.py, brownfield.py, ambiguous.py,
                          runner.py, cli.py
 
-tests/                   187 tests; test_governance_negative.py is the
+tests/                   194 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md

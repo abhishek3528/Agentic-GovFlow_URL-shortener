@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from orchestrator.contracts import RunResult
+from scenarios.approvals import InteractiveApprovalProvider
 from scenarios.runner import (
     DEFAULT_EVIDENCE_ROOT,
     ScenarioError,
@@ -39,6 +40,14 @@ def _parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="replay scenarios already completed by this runner invocation",
+    )
+    run.add_argument(
+        "--interactive-approvals",
+        action="store_true",
+        help=(
+            "pause for a real human decision at approval checkpoints "
+            "(off by default so runs stay reproducible)"
+        ),
     )
     run.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     return parser
@@ -97,13 +106,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.print_help()
         return 0
 
+    if (
+        arguments.command == "run"
+        and arguments.interactive_approvals
+        and not sys.stdin.isatty()
+    ):
+        print(
+            "govflow: --interactive-approvals requires a TTY on standard input; "
+            "refusing to read from non-interactive input",
+            file=sys.stderr,
+        )
+        return 2
+
     try:
         runner = default_runner(
             evidence_root=(
                 arguments.evidence_dir
                 if arguments.command == "run"
                 else DEFAULT_EVIDENCE_ROOT
-            )
+            ),
+            approval_provider=(
+                InteractiveApprovalProvider()
+                if arguments.command == "run" and arguments.interactive_approvals
+                else None
+            ),
         )
         if arguments.command == "list":
             _show_list(runner, as_json=arguments.json)

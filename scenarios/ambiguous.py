@@ -45,6 +45,7 @@ from orchestrator.policy import (
     PRIVACY_POLICY,
     PolicyEngine,
 )
+from scenarios.approvals import ApprovalProvider
 from scenarios.runner import ScenarioContext, ScenarioError, ScenarioExecution, ScenarioSpec
 
 
@@ -382,7 +383,12 @@ def _gate_evaluator(observations: dict[str, bool]):
     return evaluate
 
 
-def _executor(workspace: Path, phase: dict[str, int], observations: dict[str, bool]):
+def _executor(
+    workspace: Path,
+    phase: dict[str, int],
+    observations: dict[str, bool],
+    participants: dict[str, str],
+):
     def surface(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
         return TaskOutput(
             summary="four material ambiguities surfaced with bounded assumptions",
@@ -605,7 +611,7 @@ def _executor(workspace: Path, phase: dict[str, int], observations: dict[str, bo
                         "context_version": 2,
                         "validation_complete": "analytics_validation" in inputs,
                         "contract_complete": "analytics_contract_documentation" in inputs,
-                        "approved_by": HUMAN_QUALITY_OWNER.id,
+                        "approved_by": participants["quality_approver"],
                     }
                 )
             },
@@ -630,18 +636,49 @@ def _executor(workspace: Path, phase: dict[str, int], observations: dict[str, bo
     )
 
 
-def _approval(ids, clock, task_id: str, actor: Actor, rationale: str) -> Approval:
-    return Approval(
-        id=ids.next_id("approval"),
+def _approval(
+    provider: ApprovalProvider,
+    engine: OrchestrationEngine,
+    ids,
+    clock,
+    task_id: str,
+    actor: Actor,
+    rationale: str,
+) -> Approval:
+    task = engine.task(task_id)
+    return provider.decide(
         task_id=task_id,
-        granted=True,
-        actor=actor,
-        rationale=rationale,
+        impact=task.impact.value,
+        summary=task.name,
+        default_actor=actor,
+        default_rationale=rationale,
+        approval_id=ids.next_id("approval"),
         decided_at=clock.iso(),
     )
 
 
-def execute(context: ScenarioContext) -> ScenarioExecution:
+def _denied_execution(
+    engine: OrchestrationEngine,
+    approval: Approval,
+) -> ScenarioExecution:
+    return ScenarioExecution(
+        engine=engine,
+        terminal_reason=(
+            f"Human approval denied for '{approval.task_id}' by "
+            f"'{approval.actor.id}': {approval.rationale}"
+        ),
+    )
+
+
+def execute(
+    context: ScenarioContext,
+    approval_provider: ApprovalProvider | None = None,
+) -> ScenarioExecution:
+    approval_provider = (
+        approval_provider
+        if approval_provider is not None
+        else context.approval_provider
+    )
     prior = context.prior_results.get("s-02")
     if prior is None or prior.state is not RunState.SAFE_STOPPED:
         raise ScenarioError("S-03 requires the preserved S-02 safe-stopped result")
@@ -649,10 +686,11 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
     clock, ids = deterministic_pair()
     phase = {"context_version": 1}
     observations: dict[str, bool] = {}
+    participants = {"quality_approver": HUMAN_QUALITY_OWNER.id}
     plan_v1 = build_plan(created_at=clock.iso(), context_version=1)
     engine = OrchestrationEngine(
         plan_v1,
-        _executor(context.workspace, phase, observations),
+        _executor(context.workspace, phase, observations, participants),
         clock=clock,
         id_gen=ids,
         run_id=RUN_ID,
@@ -712,29 +750,36 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL
     assert engine.task("normalize-requirement-v1").state is TaskState.AWAITING_APPROVAL
     assert not any(a.name == "normalized_requirement_v1" for a in engine.artifacts)
-    assert engine.decide_approval(
-        _approval(
-            ids,
-            clock,
-            "normalize-requirement-v1",
-            HUMAN_PRODUCT_OWNER,
-            "bounded assumptions are explicit and approved for v1 planning",
-        )
-    ) is RunState.AWAITING_APPROVAL
+    approval = _approval(
+        approval_provider,
+        engine,
+        ids,
+        clock,
+        "normalize-requirement-v1",
+        HUMAN_PRODUCT_OWNER,
+        "bounded assumptions are explicit and approved for v1 planning",
+    )
+    approval_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return _denied_execution(engine, approval)
+    assert approval_state is RunState.AWAITING_APPROVAL
     assert engine.task("clarify-analytics-privacy").state is TaskState.AWAITING_APPROVAL
 
     # Complete just the clarification task, leaving a deterministic RUNNING
     # boundary before any downstream implementation can be scheduled.
-    assert engine.decide_approval(
-        _approval(
-            ids,
-            clock,
-            "clarify-analytics-privacy",
-            HUMAN_PRIVACY_OWNER,
-            "disallow raw client identifiers and require UTC-day aggregates only",
-        ),
-        resume=False,
-    ) is RunState.RUNNING
+    clarification_approval = _approval(
+        approval_provider,
+        engine,
+        ids,
+        clock,
+        "clarify-analytics-privacy",
+        HUMAN_PRIVACY_OWNER,
+        "disallow raw client identifiers and require UTC-day aggregates only",
+    )
+    approval_state = engine.decide_approval(clarification_approval, resume=False)
+    if not clarification_approval.granted:
+        return _denied_execution(engine, clarification_approval)
+    assert approval_state is RunState.RUNNING
     observations["human_clarification_recorded"] = True
 
     context_v2 = ContextVersion(
@@ -769,7 +814,7 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
         context_v2,
         changed_task_ids=("design-analytics-change",),
         replacement_tasks=replacement.tasks,
-        actor=HUMAN_PRIVACY_OWNER,
+        actor=clarification_approval.actor,
     )
     observations["active_context_v2"] = True
     engine.record_decision(
@@ -780,7 +825,7 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
                 "The privacy clarification is material to analytics design, tests, documentation, "
                 "implementation, and quality approval, but not to the retained core service scope."
             ),
-            actor=HUMAN_PRIVACY_OWNER,
+            actor=clarification_approval.actor,
             created_at=clock.iso(),
             task_id="design-analytics-change",
             context_version=2,
@@ -820,35 +865,48 @@ def execute(context: ScenarioContext) -> ScenarioExecution:
     # final quality. Each call resumes only human-authorized work.
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL
     assert engine.task("clarify-analytics-privacy").state is TaskState.AWAITING_APPROVAL
-    assert engine.decide_approval(
-        _approval(
-            ids,
-            clock,
-            "clarify-analytics-privacy",
-            HUMAN_PRIVACY_OWNER,
-            "revised v2 plans match the privacy clarification",
-        )
-    ) is RunState.AWAITING_APPROVAL
+    approval = _approval(
+        approval_provider,
+        engine,
+        ids,
+        clock,
+        "clarify-analytics-privacy",
+        HUMAN_PRIVACY_OWNER,
+        "revised v2 plans match the privacy clarification",
+    )
+    approval_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return _denied_execution(engine, approval)
+    assert approval_state is RunState.AWAITING_APPROVAL
     assert engine.task("implement-coarse-analytics").state is TaskState.AWAITING_APPROVAL
-    assert engine.decide_approval(
-        _approval(
-            ids,
-            clock,
-            "implement-coarse-analytics",
-            HUMAN_PRIVACY_OWNER,
-            "privacy and change-control allows reviewed for v2 implementation",
-        )
-    ) is RunState.AWAITING_APPROVAL
+    approval = _approval(
+        approval_provider,
+        engine,
+        ids,
+        clock,
+        "implement-coarse-analytics",
+        HUMAN_PRIVACY_OWNER,
+        "privacy and change-control allows reviewed for v2 implementation",
+    )
+    approval_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return _denied_execution(engine, approval)
+    assert approval_state is RunState.AWAITING_APPROVAL
     assert engine.task("final-quality-approval").state is TaskState.AWAITING_APPROVAL
-    assert engine.decide_approval(
-        _approval(
-            ids,
-            clock,
-            "final-quality-approval",
-            HUMAN_QUALITY_OWNER,
-            "v2 validation and contract evidence are complete and privacy-safe",
-        )
-    ) is RunState.SUCCEEDED
+    approval = _approval(
+        approval_provider,
+        engine,
+        ids,
+        clock,
+        "final-quality-approval",
+        HUMAN_QUALITY_OWNER,
+        "v2 validation and contract evidence are complete and privacy-safe",
+    )
+    participants["quality_approver"] = approval.actor.id
+    approval_state = engine.decide_approval(approval)
+    if not approval.granted:
+        return _denied_execution(engine, approval)
+    assert approval_state is RunState.SUCCEEDED
 
     # Scenario-level invariants make evidence generation fail loudly if the
     # selective blast radius or immutable history regresses.
