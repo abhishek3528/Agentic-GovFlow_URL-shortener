@@ -43,16 +43,33 @@ _DATA_PATTERNS = (
     r"\bpersistence\b",
     r"\bschemas?\b",
     r"\bmigrations?\b",
+    r"\bmigrate(?:s|d|ing)?\b",
     r"\bdatabases?\b",
+    r"\btables?\b",
+    r"\b(?:indexes|indices|index)\b",
+    r"\bbackfill(?:s|ed|ing)?\b",
+    r"\bcolumns?\b",
+    r"\brows?\b",
 )
-_BROWNFIELD_PATTERNS = (
-    r"\bexisting codebase\b",
-    r"\bbrownfield\b",
-    r"\bdefects?\b",
+_DEFECT_PATTERNS = (
     r"\bregressions?\b",
-    r"\bfix(?:es|ed|ing)?\b",
+    r"\bdefects?\b",
+    r"\bbugs?\b",
+    r"\bbroken\b",
+    r"\bincorrect\b",
+    r"\bfailing\b",
+    r"\bcrash(?:es|ed|ing)?\b",
 )
-_BREAKING_PATTERNS = (r"\bbreaking\b", r"\bcontract changes?\b")
+_EXISTING_CODE_PATTERNS = (
+    r"\bbrownfield\b",
+    r"\bexisting (?:codebase|code|implementation|repository|service|system)\b",
+)
+_BREAKING_PATTERNS = (
+    r"\bbreaking\b",
+    r"\bbackwards?[-\s]+incompatible\b",
+    r"\bincompatible changes?\b",
+    r"\bcontract changes?\b",
+)
 _ANALYTICS_PATTERNS = (r"\banalytics?\b", r"\breporting\b", r"\breports?\b")
 _DOCUMENTATION_PATTERNS = (
     r"\bdocs?\b",
@@ -69,13 +86,6 @@ _IMPLEMENTATION_PATTERNS = (
     r"\bservice\b",
     r"\bbehavior\b",
 )
-_S01_RAW_REQUIREMENT = (
-    "Establish a URL-shortener baseline that creates and redirects short URLs, "
-    "reports basic privacy-conscious analytics, exposes health and readiness, "
-    "publishes OpenAPI, and validates collision and idempotency behavior."
-)
-
-
 def _contains(text: str, patterns: tuple[str, ...]) -> bool:
     return any(re.search(pattern, text) is not None for pattern in patterns)
 
@@ -90,22 +100,9 @@ def _requirement_text(context: ContextVersion) -> str:
     return "\n".join(section.casefold() for section in sections)
 
 
-def _is_s01_baseline(context: ContextVersion) -> bool:
-    """Recognize the established greenfield profile whose graph is contractual.
-
-    The baseline's already-established analytics/reliability branch owns its
-    bounded "privacy-conscious analytics" concern.  New privacy/auth/credential
-    changes still receive the explicit review node added by the generic rules.
-    """
-    actual = " ".join(context.raw_requirement.split()).casefold()
-    expected = " ".join(_S01_RAW_REQUIREMENT.split()).casefold()
-    return actual == expected
-
-
-def _detect_signals(text: str, *, s01_baseline: bool) -> _Signals:
-    security = _contains(text, _SECURITY_PATTERNS) and not s01_baseline
+def _detect_signals(text: str) -> _Signals:
+    security = _contains(text, _SECURITY_PATTERNS)
     data = _contains(text, _DATA_PATTERNS)
-    brownfield = _contains(text, _BROWNFIELD_PATTERNS)
     breaking = _contains(text, _BREAKING_PATTERNS)
     analytics = _contains(text, _ANALYTICS_PATTERNS)
     documentation = _contains(text, _DOCUMENTATION_PATTERNS)
@@ -113,7 +110,11 @@ def _detect_signals(text: str, *, s01_baseline: bool) -> _Signals:
     documentation_only = (
         documentation
         and not implementation
-        and not any((security, data, brownfield, breaking, analytics))
+        and not any((security, data, breaking, analytics))
+    )
+    brownfield = not documentation_only and (
+        _contains(text, _DEFECT_PATTERNS)
+        or _contains(text, _EXISTING_CODE_PATTERNS)
     )
     return _Signals(
         security=security,
@@ -170,98 +171,6 @@ def _plan_metadata(
     # accepted unchanged by DependencyGraph.
     DependencyGraph(plan)
     return plan
-
-
-def _derive_s01_plan(
-    context: ContextVersion, *, created_at: str, revision: int
-) -> Plan:
-    """Reproduce the established seven-task S-01 graph exactly."""
-    requirement_entry, outputs_present, inputs_fresh, release_evidence = (
-        _standard_gates()
-    )
-    normalize = Task(
-        id="normalize-requirement",
-        name="Normalize greenfield requirement",
-        stage=Stage.REQUIREMENTS,
-        capability="business-analyst",
-        produces=("normalized_requirement",),
-        entry_gates=(requirement_entry,),
-        exit_gates=(outputs_present,),
-    )
-    design = Task(
-        id="design-baseline",
-        name="Define service and API design",
-        stage=Stage.DESIGN,
-        capability="solution-architect",
-        depends_on=(normalize.id,),
-        consumes=("normalized_requirement",),
-        produces=("service_design", "api_contract"),
-        entry_gates=(inputs_fresh,),
-        exit_gates=(outputs_present,),
-    )
-    core = Task(
-        id="implement-core",
-        name="Implement create and redirect path",
-        stage=Stage.IMPLEMENTATION,
-        capability="backend-engineer",
-        depends_on=(design.id,),
-        consumes=("service_design", "api_contract"),
-        produces=("core_implementation",),
-        entry_gates=(inputs_fresh,),
-        exit_gates=(outputs_present,),
-    )
-    analytics = Task(
-        id="implement-analytics-reliability",
-        name="Implement analytics and health path",
-        stage=Stage.IMPLEMENTATION,
-        capability="reliability-engineer",
-        depends_on=(design.id,),
-        consumes=("service_design", "api_contract"),
-        produces=("analytics_reliability_implementation",),
-        entry_gates=(inputs_fresh,),
-        exit_gates=(outputs_present,),
-    )
-    validation = Task(
-        id="integrated-validation",
-        name="Run unit, integration, contract, and smoke validation",
-        stage=Stage.TESTING,
-        capability="quality-engineer",
-        depends_on=(core.id, analytics.id),
-        consumes=("core_implementation", "analytics_reliability_implementation"),
-        produces=("integrated_validation", "smoke_result"),
-        entry_gates=(inputs_fresh,),
-        exit_gates=(outputs_present,),
-        retry_budget=1,
-    )
-    documentation = Task(
-        id="document-baseline",
-        name="Publish baseline usage and validation references",
-        stage=Stage.DOCUMENTATION,
-        capability="technical-writer",
-        depends_on=(design.id, validation.id),
-        consumes=("api_contract", "integrated_validation"),
-        produces=("operator_guide",),
-        entry_gates=(inputs_fresh,),
-        exit_gates=(outputs_present,),
-    )
-    release = Task(
-        id="release-readiness",
-        name="Human release-readiness review",
-        stage=Stage.RELEASE_READINESS,
-        capability="release-manager",
-        depends_on=(validation.id, documentation.id),
-        consumes=("api_contract", "integrated_validation", "operator_guide"),
-        produces=("release_readiness_record",),
-        impact=ImpactClass.HIGH,
-        entry_gates=(release_evidence,),
-        exit_gates=(outputs_present,),
-    )
-    return _plan_metadata(
-        context,
-        created_at=created_at,
-        revision=revision,
-        tasks=[normalize, design, core, analytics, validation, documentation, release],
-    )
 
 
 def _derive_generic_plan(
@@ -492,10 +401,7 @@ def derive_plan(
     change serialized output between processes.
     """
     text = _requirement_text(context)
-    s01_baseline = _is_s01_baseline(context)
-    if s01_baseline:
-        return _derive_s01_plan(context, created_at=created_at, revision=revision)
-    signals = _detect_signals(text, s01_baseline=False)
+    signals = _detect_signals(text)
     return _derive_generic_plan(
         context,
         created_at=created_at,

@@ -21,8 +21,9 @@ engineering work it governs.
    - [Policies](#63-policies)
    - [Human-in-the-loop approval](#64-human-in-the-loop-approval)
    - [Retry, fallback, compensation, safe-stop](#65-retry-fallback-compensation-safe-stop)
-   - [Re-planning](#66-re-planning)
-   - [Audit trail and metrics](#67-audit-trail-and-metrics)
+   - [Deriving a plan from a requirement](#66-deriving-a-plan-from-a-requirement)
+   - [Re-planning](#67-re-planning)
+   - [Audit trail and metrics](#68-audit-trail-and-metrics)
 7. [The three scenarios](#7-the-three-scenarios)
 8. [Test approach and evidence](#8-test-approach-and-evidence)
 9. [Decisions and trade-offs](#9-decisions-and-trade-offs)
@@ -152,6 +153,7 @@ an agent when the model validator was bypassed. It is fixed, and
    requirement ───► │  orchestrator/  — the control plane          │
                     │                                              │
                     │   contracts.py   frozen types + state machines│
+                    │   planner.py     requirement -> task graph    │
                     │   graph.py       DAG validation, topology     │
                     │   engine.py      gates, transitions, re-plan  │
                     │   policy.py      named guardrails             │
@@ -180,6 +182,7 @@ an agent when the model validator was bypassed. It is fixed, and
 | Module | Responsibility |
 |---|---|
 | `orchestrator/contracts.py` | Frozen types, both state machines, invariants. Do not modify. |
+| `orchestrator/planner.py` | Derives a `Plan` from a requirement's text. One unconditional path — no requirement-specific branches. |
 | `orchestrator/graph.py` | Validates identifiers, dependencies, cycles, artifact producers and ancestry. Deterministic topological order and readiness frontier. |
 | `orchestrator/engine.py` | Owns run state. Applies entry gates, policies, approval, execution, exit gates, recovery, selective invalidation. |
 | `orchestrator/policy.py` | Four named policies producing `PolicyDecision` for allow *and* deny. |
@@ -260,7 +263,7 @@ with a content hash.
 ### Run the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/ -q      # 218 tests
+.venv\Scripts\python.exe -m pytest tests/ -q      # 225 tests
 ```
 
 ### Run the service
@@ -549,7 +552,51 @@ executed**. A task naming a compensation with no registered handler emits
 `COMPENSATION_EXECUTED` with `executed: false` and does not increment the metric.
 S-02 registers a real handler, which is why its `rollback_count` is 1.
 
-### 6.6 Re-planning
+### 6.6 Deriving a plan from a requirement
+
+`orchestrator/planner.py` reads a `ContextVersion` and produces a `Plan`.
+Decomposition is a governance function, so it lives in the control plane rather
+than in the scenarios.
+
+```powershell
+.venv\Scripts\python.exe -m scenarios.cli plan "Fix a regression in the redirect handler and migrate its schema"
+```
+
+Signals in the requirement add or drop nodes, so the plan grows with the risk:
+
+| Requirement | Derived plan |
+|---|---:|
+| *"Fix a typo in the operator guide."* | **3** tasks |
+| *"Introduce a breaking change to the /links contract."* | **6**, release node marked `BREAKING` |
+| *"Change the database schema for stored links."* | **7**, adds `data-design` |
+| *"Store API tokens and rotate credentials safely."* | **7**, adds a gated `security-privacy-review` |
+| *"Fix a regression in the existing redirect handler."* | **8**, adds `impact-analysis` + `red-reproduction` ahead of planning |
+| *"…regression, migrate the schema, and ship a breaking contract change."* | **11**, all of the above |
+
+Every derived plan is validated by the same `DependencyGraph` that validates a
+hand-written one — identical rejection rules, no special path. Ordering never
+depends on set iteration, because Python randomises string hashing per process;
+`test_planner.py` asserts identical output across separate processes with
+different `PYTHONHASHSEED` values.
+
+**A deriver answers the meaning, not the string.** An earlier iteration passed
+its acceptance check by recognising one requirement's exact wording and
+returning a stored plan — appending a single word changed the output entirely.
+That is a lookup table, and it was removed.
+`test_a_paraphrased_requirement_derives_a_comparable_plan` now stands where the
+check failed: a paraphrase and a trivially edited variant must derive the same
+plan as the original.
+
+**The three scenarios keep curated graphs rather than derived ones**, and this is
+deliberate. Their task graphs exist to exercise specific controls — S-01's two
+implementation branches meeting at a join, S-02's red reproduction gating
+planning, S-03's re-plan invalidating exactly 5 of 19 artifacts. A generic
+planner does not produce those shapes, and reproducing them would have meant a
+recogniser per scenario. Derivation is therefore demonstrated as a capability
+rather than used as the execution path. See
+[§10](#decomposition-is-derivable-but-the-scenarios-are-curated).
+
+### 6.7 Re-planning
 
 When an upstream requirement changes, `Engine.replan()` does **not** mutate the
 existing plan. It:
@@ -571,7 +618,7 @@ declared input has been invalidated until a fresh version is produced.
 `ContextVersion` enforces at construction that `supersedes` references a strictly
 earlier version, so the lineage chain cannot loop or point forward.
 
-### 6.7 Audit trail and metrics
+### 6.8 Audit trail and metrics
 
 Every state change appends an immutable `Event` with a **monotonic per-run
 `seq`** — total causal order that does not depend on clock resolution. Two events
@@ -733,7 +780,7 @@ quality approval referencing the revised requirement version.
 
 ## 8. Test approach and evidence
 
-**218 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
+**225 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
 per-file coverage.
 
 ### The paired-control convention
@@ -813,18 +860,39 @@ that shaped the outcome:
 Stated plainly, because a claim a reviewer probes and finds hollow costs more
 than the claim was worth.
 
-### Decomposition is authored, not derived
+### Decomposition is derivable, but the scenarios are curated
 
-**This is the most significant limitation.** Each scenario constructs its task
-graph in Python. The system *governs* decomposition; it does not *generate* a
-plan from a requirement it has never seen. S-03's four ambiguities are likewise
-authored rather than discovered.
+The system **can** derive a plan from a requirement it has never seen —
+`orchestrator/planner.py`, demonstrated by `govflow plan` and described in
+[§6.6](#66-deriving-a-plan-from-a-requirement). It reads the requirement,
+detects signals, and emits a `Plan` of 3 to 11 tasks that the ordinary
+`DependencyGraph` validates. A paraphrase derives the same plan as the original,
+which is what distinguishes deriving from recognising.
 
-What is genuinely computed: dependency validation, topological ordering,
-readiness, gate and policy outcomes, approval routing, recovery decisions,
-descendant invalidation on re-plan, and every metric.
+**The three scenarios do not use it.** They construct their task graphs in
+Python, and that is a deliberate choice rather than an unfinished one. Their
+graphs exist to exercise particular controls — S-01's two implementation
+branches meeting at a join, S-02's red reproduction gating planning, S-03's
+re-plan invalidating exactly 5 of 19 artifacts while retaining the rest. A
+generic planner does not produce those shapes, and making it reproduce them
+would have required a recogniser per scenario: a lookup table wearing a
+planner's name. An earlier iteration did exactly that for S-01 and was removed.
 
-What is authored: the task lists, their dependency edges, and the ambiguity set.
+So the honest position is a split one. Requirement interpretation and task
+decomposition are **demonstrated as a capability** and **not used as the
+execution path**. A reviewer who wants to see the system decompose should run
+`govflow plan`; a reviewer who wants to see governance under load should run the
+scenarios. Closing the gap properly means growing the planner until curated
+graphs are unnecessary — not teaching it three answers.
+
+S-03's four ambiguities remain authored rather than discovered.
+
+What is genuinely computed: plan derivation from requirement text, dependency
+validation, topological ordering, readiness, capability dispatch, gate and policy
+outcomes, approval routing, recovery decisions, descendant invalidation on
+re-plan, and every metric.
+
+What is authored: the three scenarios' task graphs, and the ambiguity set.
 
 ### No model-backed executor
 
@@ -913,7 +981,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 218 tests; `docs/`; [browser client](#14-browser-client) |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 225 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -945,7 +1013,7 @@ orchestrator/            the control plane
 scenarios/               greenfield.py, brownfield.py, ambiguous.py,
                          runner.py, cli.py
 
-tests/                   218 tests; test_governance_negative.py is the
+tests/                   225 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md

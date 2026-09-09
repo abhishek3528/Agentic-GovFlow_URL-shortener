@@ -11,7 +11,6 @@ from orchestrator.contracts import ContextVersion, ImpactClass
 from orchestrator.graph import DependencyGraph
 from orchestrator.planner import derive_plan
 from scenarios.cli import main
-from scenarios.greenfield import RAW_REQUIREMENT, build_plan
 
 
 CREATED_AT = "2026-01-01T00:00:01+00:00"
@@ -34,6 +33,21 @@ def _context(
 
 def _task_ids(plan) -> tuple[str, ...]:
     return tuple(task.id for task in plan.tasks)
+
+
+def _plan_shape(plan) -> tuple[tuple[object, ...], ...]:
+    return tuple(
+        (
+            task.id,
+            task.stage,
+            task.capability,
+            task.depends_on,
+            task.consumes,
+            task.produces,
+            task.impact,
+        )
+        for task in plan.tasks
+    )
 
 
 def test_trivial_documentation_change_derives_a_small_plan_without_security() -> None:
@@ -75,38 +89,93 @@ def test_credential_change_adds_gated_security_review_and_gated_release() -> Non
     DependencyGraph(plan)
 
 
-def test_s01_requirement_derives_the_established_seven_task_plan_exactly() -> None:
-    context = _context(
-        RAW_REQUIREMENT,
-        normalized_problem=(
-            "Deliver the bounded FastAPI/SQLite URL-shortener baseline through a "
-            "governed SDLC DAG and retain replayable evidence."
-        ),
-        acceptance_checks=(
-            "create -> redirect -> analytics smoke path passes",
-            "invalid, collision, idempotency, not-found, health, readiness, and OpenAPI checks pass",
-            "implementation forks and joins before integrated validation",
-            "one transient failure recovers within one retry",
-            "javascript URL fixture is denied while safe work continues",
-            "release-readiness requires an attributable human approval",
-        ),
+def test_a_paraphrased_requirement_derives_a_comparable_plan() -> None:
+    """A deriver answers the meaning; a lookup table answers the string."""
+    requirement = (
+        "Establish a URL-shortener baseline that creates and redirects short URLs, "
+        "reports basic privacy-conscious analytics, exposes health and readiness, "
+        "publishes OpenAPI, and validates collision and idempotency behavior."
+    )
+    paraphrase = (
+        "Build a URL shortening service with create and redirect behavior, "
+        "privacy-conscious link analytics, health and readiness endpoints, an "
+        "OpenAPI contract, and collision plus idempotency validation."
     )
 
-    derived = derive_plan(context, created_at=CREATED_AT)
-    established = build_plan(created_at=CREATED_AT)
+    original = derive_plan(_context(requirement), created_at=CREATED_AT)
+    reworded = derive_plan(_context(paraphrase), created_at=CREATED_AT)
+    extended = derive_plan(_context(requirement + " Please."), created_at=CREATED_AT)
 
-    assert len(derived.tasks) == 7
-    assert derived == established
-    DependencyGraph(derived)
+    assert _plan_shape(original) == _plan_shape(reworded)
+    assert _plan_shape(original) == _plan_shape(extended)
+    DependencyGraph(original)
+    DependencyGraph(reworded)
+    DependencyGraph(extended)
 
 
-def test_s01_profile_does_not_hide_a_new_credential_signal() -> None:
+def test_fix_without_a_defect_signal_does_not_add_red_reproduction() -> None:
     plan = derive_plan(
-        _context(RAW_REQUIREMENT + " The change must also handle credentials."),
+        _context("Fix a typo in the operator guide."), created_at=CREATED_AT
+    )
+
+    assert _task_ids(plan) == (
+        "normalize-requirement",
+        "document-change",
+        "release-readiness",
+    )
+    assert plan.task_by_id("red-reproduction") is None
+
+
+def test_documentation_only_defect_word_does_not_add_red_reproduction() -> None:
+    plan = derive_plan(
+        _context("Correct an incorrect spelling in the operator documentation."),
         created_at=CREATED_AT,
     )
 
-    assert plan.task_by_id("security-privacy-review") is not None
+    assert plan.task_by_id("red-reproduction") is None
+
+
+def test_migration_vocabulary_adds_data_design() -> None:
+    plan = derive_plan(
+        _context("Migrate the links table to add an index and backfill existing rows."),
+        created_at=CREATED_AT,
+    )
+
+    assert plan.task_by_id("data-design") is not None
+
+
+@pytest.mark.parametrize(
+    "wording",
+    (
+        "Make a backwards-incompatible API update.",
+        "Make a backward incompatible API update.",
+        "Make an incompatible change to the API.",
+        "Make a contract change to the redirect endpoint.",
+    ),
+)
+def test_breaking_vocabulary_marks_release_as_breaking(wording: str) -> None:
+    plan = derive_plan(_context(wording), created_at=CREATED_AT)
+
+    assert plan.task_by_id("release-readiness").impact is ImpactClass.BREAKING
+
+
+def test_task_count_increases_with_change_complexity() -> None:
+    documentation = derive_plan(
+        _context("Fix a typo in the operator guide."), created_at=CREATED_AT
+    )
+    defect = derive_plan(
+        _context("Fix a collision bug in the existing codebase."),
+        created_at=CREATED_AT,
+    )
+    complex_change = derive_plan(
+        _context(
+            "Fix a collision bug, migrate the links table, and make a "
+            "backward incompatible contract change."
+        ),
+        created_at=CREATED_AT,
+    )
+
+    assert len(documentation.tasks) < len(defect.tasks) < len(complex_change.tasks)
 
 
 @pytest.mark.parametrize(

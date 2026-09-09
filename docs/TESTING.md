@@ -8,7 +8,7 @@ The required command is:
 D:\URL-Project\.venv\Scripts\python.exe -m pytest tests/ -q
 ```
 
-It collects and passes **218 tests**. **106** are in
+It collects and passes **225 tests**. **106** are in
 `tests/test_governance_negative.py`.
 
 ## Coverage by file
@@ -19,7 +19,7 @@ It collects and passes **218 tests**. **106** are in
 | `tests/test_contracts.py` | 26 | Frozen model invariants, complete task/run transition tables, human approval validation, deterministic clock/ids, context and plan versioning, artifact mutability boundary, and deterministic/failure executors. |
 | `tests/test_controls.py` | 17 | Allow and deny paths for every named policy, unknown-policy fail-closed behavior, correlated approvals, transient recovery, governed fallback output/gates, invalid fallback fail-closed behavior, compensation, and safe-stop. |
 | `tests/test_graph.py` | 3 | Deterministic topology/frontiers/descendants, cycle and unknown-dependency rejection, and artifact-producer ancestry. |
-| `tests/test_planner.py` | 13 | Requirement-driven decomposition: signal rules for persistence, security, brownfield defect, breaking change and analytics work; validation of every derived plan through `DependencyGraph`; cross-process determinism; and reproduction of S-01's existing plan from its requirement text. |
+| `tests/test_planner.py` | 13 | Requirement-driven decomposition: signal rules for persistence, security, brownfield defect, breaking change and analytics work; plan size ordering from trivial to compound requirements; validation of every derived plan through `DependencyGraph`; cross-process determinism under differing hash seeds; and that a paraphrase derives the same plan as the original, which is what separates deriving from recognising. |
 | `tests/test_engine.py` | 7 | Fork/join execution, illegal and direct transition rejection, missing join output, missing gate evaluator, deterministic replay, and selective re-plan history. |
 | `tests/test_events.py` | 4 | Per-run sequence assignment, append-only JSONL rehydration, rejected replay/gaps, and deep immutability of stored history. |
 | `tests/test_governance_negative.py` | 106 | Independent adversarial checks for state, approval (scripted and interactive), join, freshness, recovery, fallback, policies, append-only history, selective re-planning, and the product/control-plane import boundary, including load-bearing controls. |
@@ -31,7 +31,7 @@ It collects and passes **218 tests**. **106** are in
 | `tests/test_shortener_api.py` | 11 | HTTP create/redirect/stats, idempotency, collision, invalid/unsafe input, not-found, health/readiness, and OpenAPI. |
 | `tests/test_shortener_live.py` | 1 | Real Uvicorn process startup and the live create -> redirect -> stats smoke path. |
 
-The counts above sum to 218 and include parametrized cases as pytest collects
+The counts above sum to 225 and include parametrized cases as pytest collects
 them.
 
 ## Lane D: proving controls are load-bearing
