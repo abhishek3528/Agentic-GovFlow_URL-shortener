@@ -9,6 +9,7 @@ The repository separates decisions about work from the work itself:
 | `orchestrator/` | Owns plans, legal state transitions, readiness, gates, policies, approvals, artifact provenance, recovery, re-planning, and events. |
 | `orchestrator/executor.py` | Defines the narrow `TaskExecutor.execute(task, inputs) -> TaskOutput` work seam. The deterministic implementations perform task work and report outputs or failures. |
 | `orchestrator/agents.py` | Implements named role agents and two-level capability -> task-handler dispatch, failing closed on missing ownership. |
+| `orchestrator/planner.py` | Derives a `Plan` from a requirement's text. One unconditional path, no requirement-specific branches. |
 | `scenarios/` | Assembles plans and deterministic agent handlers into the sequential S-01 -> S-02 -> S-03 demonstration and exports run evidence. |
 | `app/` | The governed work product: a FastAPI URL shortener with SQLite persistence. |
 
@@ -74,6 +75,39 @@ already carries two independent implementations (`DeterministicExecutor` and
 gates, approvals, recovery, or audit. That is the strongest available evidence
 short of building it, and it is stated as a limitation in
 `docs/FINAL_SUMMARY.md` rather than glossed.
+
+## Where the plan comes from
+
+`orchestrator/planner.py` derives a `Plan` from a `ContextVersion`.
+Decomposition is a governance decision, so it belongs in the control plane
+rather than in the scenarios that consume it. Signals detected in the
+requirement text add or drop nodes, so plan size tracks risk: a documentation
+change derives three tasks, a persistence change seven with a `data-design`
+node, a defect fix eight with impact analysis and a red reproduction ahead of
+planning, and a requirement combining a regression, a migration and a breaking
+contract change eleven. `govflow plan "<requirement>"` prints the result.
+
+Every derived plan is validated by the same `DependencyGraph` that validates a
+hand-written one — the identical rejection rules, with no special path for
+generated input. Ordering never depends on set iteration, because Python
+randomises string hashing per process and a set-driven task order would differ
+between runs; `tests/test_planner.py` asserts identical output across processes
+started with different `PYTHONHASHSEED` values.
+
+A deriver answers the meaning, not the string. An earlier iteration passed its
+acceptance check by recognising one requirement's exact wording and returning a
+stored plan; appending a single word changed the output entirely. That was a
+lookup table and was removed.
+`tests/test_planner.py::test_a_paraphrased_requirement_derives_a_comparable_plan`
+now holds the line the original check failed to.
+
+The three scenarios keep hand-built task graphs rather than derived ones. Theirs
+exist to exercise particular controls — two implementation branches meeting at a
+join, a red reproduction gating planning, a re-plan invalidating exactly five of
+nineteen artifacts — which a generic planner does not produce, and reproducing
+them would have required one recogniser per scenario. Derivation is therefore a
+demonstrated capability rather than the execution path, and
+`docs/FINAL_SUMMARY.md` records that as a limitation rather than glossing it.
 
 ## DAG execution and gates
 

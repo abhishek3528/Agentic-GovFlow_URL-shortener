@@ -837,7 +837,7 @@ were run and verified to pass.
 
 ## 9. Decisions and trade-offs
 
-Full log in [`plan/DECISIONS.md`](plan/DECISIONS.md) (D-001 … D-015). The ones
+Full log in [`plan/DECISIONS.md`](plan/DECISIONS.md) (D-001 … D-020). The ones
 that shaped the outcome:
 
 | Decision | Rationale | What it cost |
@@ -851,6 +851,11 @@ that shaped the outcome:
 | **Independent adversarial test lane** | Tests by the implementer assert the implementation back to itself. | Coordination overhead — and it found a real approval-bypass defect. |
 | **Collapse the planning phases** (D-013) | Remaining time was better spent on the runnable prototype than on internal design documents a reviewer never sees. | Architecture rationale is written from finished code rather than agreed up front. |
 | **Bound "production-grade" claims** (D-011) | Candid boundaries are more defensible than unverified production or compliance claims. | The submission claims less than it could have. |
+| **Agents dispatch, rather than label** (D-016) | `Task.capability` named fourteen roles that nothing read; a field nothing depends on is documentation, not design. | An unowned capability now stops a run — correct, but it makes typos fatal rather than silent. |
+| **Fallback ordered after retry, before compensation** (D-017) | The assignment names four recovery controls and only three existed. | A fallback is the only recovery action that can end in success, so it needed the most constraining: it faces the same gates as primary work. |
+| **The product owns its own clock** (D-018) | `app/` importing `orchestrator.clock` inverted the stated architecture. | Six duplicated lines, traded for a dependency arrow that points one way and is enforced by a test. |
+| **Interactive approval is opt-in** (D-019) | A real person can now decide, but byte-reproducible evidence depends on deterministic fixtures. | The default path still never stops for anyone; the human path exists but is not the one a reviewer runs by default. |
+| **Derive plans, but keep curated scenario graphs** (D-020) | A generic plan does not produce a fork/join or a five-of-nineteen selective invalidation, and reproducing those would mean a recogniser per scenario. | Requirements 1 and 2 are demonstrated as a capability rather than exercised as the execution path. The largest remaining gap, stated plainly in [§10](#10-limitations-and-what-was-not-built). |
 | **Collision/idempotency as the S-02 target** | It naturally crosses API, domain, persistence, test and documentation boundaries without expanding product scope. | A narrow, unglamorous defect. |
 
 ---
@@ -919,10 +924,22 @@ is recorded in the S-02 run's own limitations, not just in prose.
 
 Single-process, in-memory engine state with JSONL event persistence — not a
 distributed scheduler, not crash-resumable mid-run. SQLite gives a credible
-restart-safe product slice, not multi-node scale or a production SLO. Human
-approvals are deterministic, human-attributed fixtures, not an external identity
-provider — though the invariant that an agent cannot grant approval is enforced
-regardless.
+restart-safe product slice, not multi-node scale or a production SLO.
+
+Execution is **sequential**. The graph models parallel paths and enforces the
+join, but the engine runs the ready frontier one task at a time. Concurrency
+would make the event stream's ordering non-deterministic and cost the
+byte-identical evidence that every governance claim here is checked against —
+a bad trade on a thirteen-task graph. Making both work is possible (execute
+concurrently, append each task's events in canonical order once the wave
+completes) and is listed in [§11](#11-what-i-would-do-next).
+
+Approvals identify the reviewer by a **self-declared name**, not an
+authenticated one. `--interactive-approvals` collects a real person's decision
+at the terminal; the default scripted path uses deterministic human-attributed
+fixtures so evidence stays reproducible. Neither is backed by an identity
+provider — but the invariant that an agent cannot grant approval holds on both
+paths, and is enforced in the type system *and* re-checked by the engine.
 
 ### Deliberate non-goals
 
@@ -942,23 +959,39 @@ bounded URL/input safety. No production-deployment or formal-compliance claim.
 
 In priority order, if this continued past the time box:
 
-1. **Build Lane E.** A model-backed executor behind an env var, off by default,
-   with the deterministic path staying the reviewer path. This is the highest-value
-   addition and the seam is already there.
-2. **Derive plans from requirements.** A planning executor that emits a `Plan`
-   validated by the existing `DependencyGraph` rules — closing the authored-
-   decomposition gap without weakening any governance, since a generated plan
-   would face exactly the same validation.
-3. **Crash-resumable runs.** Rehydrate engine state from the persisted JSONL
-   rather than holding it in memory, making a run resumable after a process
-   restart.
-4. **Richer compensation.** Real source-control or migration rollback behind the
-   same named-action interface.
-5. **Policy expression.** Move policy rules to a declarative form so guardrails
-   can be reviewed and changed without touching Python.
-6. **Concurrent branch execution.** The graph already models parallelism; the
-   engine executes it sequentially. Real concurrency would exercise the join
-   semantics harder.
+1. **Grow the planner until curated graphs are unnecessary.** The planner derives
+   real plans today, but the three scenarios still use hand-built graphs because
+   a generic plan does not exercise a fork/join or a selective re-plan sharply
+   enough to demonstrate them ([§6.6](#66-deriving-a-plan-from-a-requirement)).
+   Closing that means teaching the planner to *derive* branching and
+   synchronisation from a requirement's shape — not teaching it three answers,
+   which is the trap an earlier iteration fell into. This is the largest
+   remaining gap and the one a reviewer is most likely to probe.
+
+2. **Build Lane E — a model-backed agent.** One role backed by a model, behind
+   an environment variable and off by default, with the deterministic path
+   staying the reviewer path. The `TaskExecutor` seam already carries two
+   implementations, so a third would need no change to gates, approvals,
+   recovery or audit — which is precisely the claim it would prove.
+
+3. **Concurrent branch execution.** The graph models parallelism; the engine
+   executes sequentially. Doing it without losing byte-identical evidence means
+   buffering each task's events and appending them in canonical order once a
+   wave completes, plus making the shared artifact, id and event state
+   thread-safe. Worth doing carefully or not at all.
+
+4. **Crash-resumable runs.** Rehydrate engine state from the persisted JSONL
+   rather than holding it in memory, so a run survives a process restart.
+
+5. **Authenticated approvals.** Bind the reviewer identity to an external
+   provider rather than a self-declared name, so attribution is verifiable and
+   not merely recorded.
+
+6. **Richer compensation.** Real source-control or migration rollback behind the
+   existing named-action interface.
+
+7. **Declarative policy.** Move policy rules out of Python so guardrails can be
+   reviewed and changed by someone who does not read the codebase.
 
 ---
 
@@ -977,13 +1010,13 @@ In priority order, if this continued past the time box:
 
 | # | Requirement | Where |
 |---|---|---|
-| 1 | Requirement understanding — intent, ambiguity, normalization | [§7 S-03](#s-03--ambiguous-clarification-then-a-governed-re-plan); `ContextVersion`, `Ambiguity`. Authored — see [§10](#10-limitations-and-what-was-not-built). |
-| 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
+| 1 | Requirement understanding — intent, ambiguity, normalization | [§6.6](#66-deriving-a-plan-from-a-requirement) — the planner reads the requirement and the plan changes with it; [§7 S-03](#s-03--ambiguous-clarification-then-a-governed-re-plan) for versioned contexts and surfaced ambiguities. The scenarios' graphs are curated — see [§10](#10-limitations-and-what-was-not-built). |
+| 2 | Task decomposition with dependencies and sequencing | [§6.6](#66-deriving-a-plan-from-a-requirement) derives it; [§6.1](#61-dependency-graph-and-the-dag) validates it. Same caveat. |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
 | 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 225 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
-| 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
+| 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) — including `--interactive-approvals`, where a real person decides |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
 
 ---

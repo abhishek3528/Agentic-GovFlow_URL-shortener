@@ -119,13 +119,36 @@ leaves the `tmp/s01-smoke-*` directory count unchanged
 
 ## Limitations
 
-Lane E, the optional model-backed executor, was **not built**. The deterministic
-path is the only executor. There is no Docker packaging, rate limiting, custom
-aliases, QR codes, or authentication platform. The product and orchestrator
-remain bounded demonstrations; they make no claim of production deployment,
-formal compliance certification, or enterprise identity assurance.
+**Decomposition is derivable but the scenarios are curated.** `orchestrator/planner.py`
+derives a plan from a requirement it has never seen — three to eleven tasks
+depending on detected risk, validated by the same `DependencyGraph` as a
+hand-written plan, and demonstrated by `govflow plan`. The three scenarios
+nevertheless keep hand-built graphs, because theirs exist to exercise specific
+controls a generic plan does not produce: two implementation branches meeting at
+a join, a red reproduction gating planning, a re-plan invalidating exactly five
+of nineteen artifacts. Making the planner reproduce them would have required a
+recogniser per scenario; an earlier iteration did that for S-01 and was removed.
+Requirement interpretation and task decomposition are therefore *demonstrated as
+a capability* and *deliberately not the execution path*. This is the largest
+remaining gap.
 
-There is no graphical interface to the orchestration engine. It is driven by its
-CLI and reviewed through its evidence bundles, and the browser client under
-`web/` is a client for the URL-shortener API rather than for the engine — no
-governed workflow depends on it.
+**Execution is sequential.** The graph models parallel paths and the join is
+enforced, but the ready frontier runs one task at a time. Concurrency would make
+event ordering non-deterministic and cost the byte-identical evidence every claim
+here is checked against.
+
+**Lane E, a model-backed executor, was not built.** Both shipped executor paths
+are credential-free — direct deterministic handlers, and deterministic
+named-agent dispatch. Having two implementations of the seam is the available
+evidence that a third could join without changing governance; it is not proof.
+
+**Approvals record a self-declared reviewer**, not an authenticated one, on both
+the scripted and interactive paths.
+
+There is no Docker packaging, rate limiting, custom aliases, QR codes, or
+authentication platform, and no graphical interface to the orchestration engine —
+it is driven by its CLI and reviewed through its evidence bundles, while the
+browser client under `web/` serves the URL-shortener API and no governed workflow
+depends on it. The product and orchestrator remain bounded demonstrations; they
+make no claim of production deployment, formal compliance certification, or
+enterprise identity assurance.
