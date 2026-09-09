@@ -16,6 +16,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from app.repository import SqliteLinkRepository
+from orchestrator.agents import Agent, AgentRegistry
 from orchestrator.clock import deterministic_pair
 from orchestrator.contracts import (
     Actor,
@@ -33,7 +34,7 @@ from orchestrator.contracts import (
     TaskState,
 )
 from orchestrator.engine import OrchestrationEngine
-from orchestrator.executor import DeterministicExecutor, TaskFailure, TaskOutput
+from orchestrator.executor import TaskFailure, TaskOutput
 from orchestrator.policy import CHANGE_CONTROL_POLICY, PolicyEngine
 from orchestrator.recovery import RecoveryController
 from scenarios.approvals import ApprovalProvider
@@ -218,21 +219,6 @@ class _CollisionGenerator:
         return "shared00" if collision_index == 0 else f"fallback{collision_index}"
 
 
-class _PersistentReleaseFailureExecutor:
-    """Keep a release check retryable but failing until governance exhausts it."""
-
-    def __init__(self, inner: DeterministicExecutor) -> None:
-        self._inner = inner
-
-    def execute(self, task: Task, inputs: dict[str, str]) -> TaskOutput:
-        if task.id == "verify-release-candidate":
-            raise TaskFailure(
-                "injected persistent release-candidate verification failure",
-                transient=True,
-            )
-        return self._inner.execute(task, inputs)
-
-
 def _gate_evaluator(
     workspace: Path,
     baseline_succeeded: bool,
@@ -312,7 +298,7 @@ def _executor(
     workspace: Path,
     baseline_run_id: str,
     observations: dict[str, bool],
-) -> _PersistentReleaseFailureExecutor:
+) -> AgentRegistry:
     def analyze(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
         citations = {
             "API": ["app/main.py: POST /links"],
@@ -510,18 +496,51 @@ def _executor(
             validation_results=checks,
         )
 
-    inner = DeterministicExecutor(
-        {
-            "analyze-baseline-impact": analyze,
-            "reproduce-collision-idempotency-defect": reproduce,
-            "plan-gated-fix": plan_change,
-            "apply-collision-idempotency-fix": implement,
-            "validate-fixed-behavior": validate,
-            "document-reliability-change": document,
-            "synchronize-before-after-proof": integrate,
-        }
-    )
-    return _PersistentReleaseFailureExecutor(inner)
+    def verify_release_candidate(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
+        raise TaskFailure(
+            "injected persistent release-candidate verification failure",
+            transient=True,
+        )
+
+    agents = AgentRegistry()
+    for agent in (
+        Agent(
+            "agent:brownfield-analyst",
+            "brownfield-analyst",
+            {"analyze-baseline-impact": analyze},
+        ),
+        Agent(
+            "agent:quality-engineer",
+            "quality-engineer",
+            {
+                "reproduce-collision-idempotency-defect": reproduce,
+                "validate-fixed-behavior": validate,
+            },
+        ),
+        Agent("agent:solution-architect", "solution-architect", {"plan-gated-fix": plan_change}),
+        Agent(
+            "agent:backend-engineer",
+            "backend-engineer",
+            {"apply-collision-idempotency-fix": implement},
+        ),
+        Agent(
+            "agent:technical-writer",
+            "technical-writer",
+            {"document-reliability-change": document},
+        ),
+        Agent(
+            "agent:release-quality-engineer",
+            "release-quality-engineer",
+            {"synchronize-before-after-proof": integrate},
+        ),
+        Agent(
+            "agent:release-engineer",
+            "release-engineer",
+            {"verify-release-candidate": verify_release_candidate},
+        ),
+    ):
+        agents.register(agent)
+    return agents
 
 
 def execute(
@@ -587,9 +606,10 @@ def execute(
     recovery.register(COMPENSATION_NAME, restore_baseline)
 
     plan = build_plan(created_at=clock.iso())
+    agents = _executor(context.workspace, baseline.run_id, observations)
     engine = OrchestrationEngine(
         plan,
-        _executor(context.workspace, baseline.run_id, observations),
+        agents,
         clock=clock,
         id_gen=ids,
         run_id=RUN_ID,
@@ -607,7 +627,7 @@ def execute(
                 "Repository inspection shows the idempotency boundary belongs in "
                 "SqliteLinkRepository.create_or_get before candidate allocation."
             ),
-            actor=AGENT,
+            actor=agents.actor_for(engine.task("plan-gated-fix")),
             created_at=clock.iso(),
             task_id="plan-gated-fix",
             context_version=1,
@@ -621,7 +641,7 @@ def execute(
             is_breaking=False,
             declared_impact=ImpactClass.HIGH,
         ),
-        actor=AGENT,
+        actor=agents.actor_for(engine.task("apply-collision-idempotency-fix")),
     )
 
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL

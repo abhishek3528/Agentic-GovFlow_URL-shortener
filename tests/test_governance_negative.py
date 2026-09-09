@@ -61,6 +61,7 @@ from orchestrator.contracts import (
     is_legal_run_transition,
     is_legal_task_transition,
 )
+from orchestrator.agents import Agent, AgentDispatchError, AgentRegistry, AgentRegistryError
 from orchestrator.engine import Engine, EngineError, IllegalTransitionError
 from orchestrator.events import EventStore, EventStoreError
 from orchestrator.executor import DeterministicExecutor, ScriptedFailureExecutor, TaskOutput
@@ -967,6 +968,121 @@ def test_compensation_runs_before_the_safe_stop() -> None:
     assert EventType.COMPENSATION_EXECUTED in types
     assert types.index(EventType.COMPENSATION_EXECUTED) < types.index(EventType.SAFE_STOP_TRIGGERED)
     assert governed.metrics.rollback_count == 1
+
+
+# ==========================================================================
+# 4b. Capability dispatch is an executable contract
+#
+# `Task.capability` names the role expected to perform the work. Before agent
+# dispatch existed it was read in exactly one place -- the evidence exporter --
+# so every capability string in the repository could have been deleted without
+# breaking anything. A field nothing depends on is documentation, not design.
+# These tests exist to keep it load-bearing.
+# ==========================================================================
+
+
+def agent(name: str, capability: str, **handlers) -> Agent:
+    return Agent(name=name, capability=capability, handlers=dict(handlers))
+
+
+def working_handler(t: Task, inputs: dict[str, str]) -> TaskOutput:
+    return TaskOutput(
+        succeeded=True,
+        summary="done",
+        artifacts={name: f"content for {name}" for name in t.produces},
+    )
+
+
+def test_an_unknown_capability_fails_closed() -> None:
+    """A task whose role nobody owns must refuse to run, not run anyway.
+
+    This is the difference between dispatch and decoration: a typo in a
+    capability string has to break something, or the field is not a contract.
+    """
+    registry = AgentRegistry()
+    registry.register(agent("agent:qa", "quality-engineer", check=working_handler))
+
+    with pytest.raises(AgentDispatchError):
+        registry.execute(task("check", capability="nonexistent-role"), {})
+
+
+def test_a_registered_agent_without_the_handler_fails_closed() -> None:
+    """Owning the role is not the same as having done the work.
+
+    ``DeterministicExecutor`` deliberately stubs an unregistered task so a plan
+    can run end to end while handlers are still being written. That convenience
+    must not survive into agent dispatch, where a missing handler would mean an
+    agent silently claiming work it has no implementation for.
+    """
+    registry = AgentRegistry()
+    registry.register(agent("agent:qa", "quality-engineer", other_task=working_handler))
+
+    with pytest.raises(AgentDispatchError):
+        registry.execute(task("check", capability="quality-engineer"), {})
+
+
+def test_capability_dispatch_control_is_load_bearing() -> None:
+    """A task whose role *is* owned must execute. Otherwise the refusals above
+    would be explained by dispatch being broken rather than by it being strict."""
+    registry = AgentRegistry()
+    registry.register(agent("agent:qa", "quality-engineer", check=working_handler))
+
+    output = registry.execute(task("check", capability="quality-engineer", produces=("report",)), {})
+
+    assert output.succeeded
+    assert output.artifacts == {"report": "content for report"}
+
+
+def test_two_agents_cannot_claim_the_same_capability() -> None:
+    """Ambiguous ownership would make dispatch order-dependent and untraceable."""
+    registry = AgentRegistry()
+    registry.register(agent("agent:qa", "quality-engineer", check=working_handler))
+
+    with pytest.raises(AgentRegistryError):
+        registry.register(agent("agent:other-qa", "quality-engineer", check=working_handler))
+
+
+def test_an_agent_cannot_attribute_its_work_to_a_human() -> None:
+    """Naming an agent to look like a person must not confer human authority.
+
+    Attribution is derived by the registry, not supplied by the agent: the kind
+    is always AGENT whatever the name says. If an agent could present as HUMAN,
+    every approval gate in the system would be reachable by choosing a name.
+    """
+    registry = AgentRegistry()
+    registry.register(agent("reviewer:alex", "release-manager", release=working_handler))
+
+    actor = registry.actor_for(task("release", capability="release-manager"))
+
+    assert actor.kind is ActorKind.AGENT, "an agent presented itself as a human"
+
+    with pytest.raises(ValidationError):
+        Approval(
+            id="approval-1", task_id="release", granted=True, actor=actor,
+            rationale="approving my own work under a human-looking name",
+            decided_at=T0,
+        )
+
+
+def test_agent_dispatch_refuses_rather_than_stubbing_in_a_real_run() -> None:
+    """End to end: an unowned capability stops the run instead of faking output.
+
+    The unit tests above check the registry in isolation. This checks that the
+    engine surfaces the failure rather than swallowing it into a task result.
+    """
+    registry = AgentRegistry()
+    registry.register(agent("agent:qa", "quality-engineer", known=working_handler))
+    governed = engine(
+        task("known", capability="quality-engineer", produces=("a",)),
+        task("orphan", capability="unowned-role", depends_on=("known",), consumes=("a",)),
+        executor=registry,
+    )
+
+    with pytest.raises(AgentDispatchError):
+        governed.run()
+
+    assert governed.task("orphan").state is not TaskState.SUCCEEDED
+    assert "orphan" not in {a.produced_by_task for a in governed.artifacts}
 
 
 # ==========================================================================

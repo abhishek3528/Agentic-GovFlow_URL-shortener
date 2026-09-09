@@ -99,10 +99,12 @@ performs work and reports outputs or failure. It **cannot** mutate engine state,
 write events, assign artifact ids or versions, or decide a gate or policy
 outcome. The engine owns all of that.
 
-The consequence: the governance layer is indifferent to *how* work gets done. The
-shipped executor is deterministic and credential-free. A model-backed executor
-would slot into the same seam without a single change to gates, approvals,
-recovery, or audit. That is what makes this an orchestrator rather than a script.
+The consequence: the governance layer is indifferent to *how* work gets done.
+Two credential-free implementations ship: `DeterministicExecutor`, retained as
+the direct task-handler path, and `AgentRegistry`, used by all three scenarios.
+The registry first routes `Task.capability` to its owning `Agent`, then routes
+the task id to that agent's handler. A model-backed executor could still slot
+into the same seam without changing gates, approvals, recovery, or audit.
 
 **This is also the project's most debatable decision, so it is stated plainly:**
 no LLM is invoked anywhere in the default path. See
@@ -156,11 +158,12 @@ an agent when the model validator was bypassed. It is fixed, and
                     │   approval.py    human decisions              │
                     │   recovery.py    retry/fallback/compensate    │
                     │   events.py      append-only JSONL store      │
+                    │   agents.py      capability-owned dispatch    │
                     └───────────────┬──────────────────────────────┘
                                     │  TaskExecutor.execute(task, inputs)
                                     ▼           ── the only seam ──
                     ┌──────────────────────────────────────────────┐
-                    │  scenarios/  — assembles plans + handlers     │
+                    │  scenarios/  — assembles plans + agents       │
                     │  S-01 ──► S-02 ──► S-03   (strictly ordered)  │
                     └───────────────┬──────────────────────────────┘
                                     │  operates on
@@ -183,7 +186,8 @@ an agent when the model validator was bypassed. It is fixed, and
 | `orchestrator/approval.py` | Request registry and immutable human decisions. |
 | `orchestrator/recovery.py` | Retry/compensate/safe-stop choice, plus metrics projected from events. |
 | `orchestrator/events.py` | Append-only store with a monotonic per-run `seq`, persisted as JSONL. |
-| `orchestrator/executor.py` | The `TaskExecutor` seam and the deterministic default. |
+| `orchestrator/executor.py` | The `TaskExecutor` seam and direct deterministic implementation. |
+| `orchestrator/agents.py` | Named role agents and fail-closed capability -> task-handler dispatch. |
 | `scenarios/` | The three runs, the dependency-aware runner, the CLI, and the evidence exporter. |
 | `app/` | The URL shortener being governed. |
 | `web/` | React browser client for the shortener API. Consumes `app/`; the engine neither knows nor depends on it. |
@@ -256,7 +260,7 @@ with a content hash.
 ### Run the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/ -q      # 194 tests
+.venv\Scripts\python.exe -m pytest tests/ -q      # 205 tests
 ```
 
 ### Run the service
@@ -415,16 +419,19 @@ executes:
 That last rule is the subtle one, and it is what makes freshness enforceable
 rather than best-effort.
 
-**Roles.** `capability` labels who should own each task —
+**Roles.** `capability` selects the agent that owns each task —
 `business-analyst`, `product-owner`, `solution-architect`, `brownfield-analyst`,
 `backend-engineer`, `reliability-engineer`, `quality-engineer`,
 `release-quality-engineer`, `technical-writer`, `delivery-lead`,
 `release-manager`, `release-engineer`, `privacy-owner`, `quality-owner`.
 
-These are declarative attribution metadata, **not** separate agent processes and
-not a dispatch mechanism. The load-bearing identity field is `Actor.kind`
-(`human` / `agent` / `system`), which is what approval gates actually check. See
-[§10](#10-limitations-and-what-was-not-built).
+`AgentRegistry` performs two-level dispatch: the capability resolves a named
+`Agent`, then that agent resolves the task id in its own handler table. A missing
+agent or handler raises `AgentDispatchError`; there is no stub fallback on this
+path. Task-scoped execution events use the resolved agent name (for example,
+`agent:quality-engineer`), while approval decisions remain attributed to the
+human reviewer. These behaviors are checked by `tests/test_agents.py` and by
+the actor assertions in all three scenario suites.
 
 ### 6.2 Gates
 
@@ -726,12 +733,12 @@ quality approval referencing the revised requirement version.
 
 ## 8. Test approach and evidence
 
-**194 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
+**205 tests**, all passing. See [`docs/TESTING.md`](docs/TESTING.md) for
 per-file coverage.
 
 ### The paired-control convention
 
-**100 of those tests are an adversarial negative suite** in
+**106 of those tests are an adversarial negative suite** in
 `tests/test_governance_negative.py`, written from the specification by an agent
 that did not implement the engine.
 
@@ -768,9 +775,9 @@ because it must always be regenerable. Ten files per bundle: `index.json`
 `plans.json`, `graph.json`, `artifacts.json`, `decisions.json`, `controls.json`,
 `metrics.json`. See [`evidence/README.md`](evidence/README.md).
 
-**Verified regenerable:** re-running the chain into a fresh directory produced
-**24 of 30 files byte-identical**; the remaining six differed only in run-id and
-timestamp fields, with identical structure and event ordering.
+**Verified regenerable:** replaying the complete chain twice into the same
+evidence root produced **30 of 30 files byte-identical**, including every JSONL
+event stream and manifest hash.
 
 ### Claims are backed
 
@@ -789,7 +796,7 @@ that shaped the outcome:
 | Decision | Rationale | What it cost |
 |---|---|---|
 | **Orchestration is the primary deliverable** (D-004) | The assignment names workflow orchestration the critical differentiator and gives it the densest requirements. | Product surface is deliberately thin. |
-| **Governance/work split via a `TaskExecutor` seam** (D-015) | Keeps the control plane independent of how work is performed — the difference between an orchestrator and a script. | An extra indirection that only pays off when a second executor exists. |
+| **Governance/work split via a `TaskExecutor` seam** (D-015) | Keeps the control plane independent of how work is performed — the difference between an orchestrator and a script. | Both implementations must honor the same narrow output contract; agent dispatch adds explicit registration. |
 | **Deterministic, credential-free default path** (D-009) | A reviewer can run everything offline; evidence is diffable; no API key, quota, or flake. | No LLM in the default path. See [§10](#10-limitations-and-what-was-not-built). |
 | **Inject time and identity** (D-014) | Replay and evidence regeneration are graded claims. Cheap now, expensive to retrofit. | Every call site must thread a clock. |
 | **Freeze `contracts.py` first** (D-012, D-015) | Components were built concurrently against one source of truth and joined correctly. | The contract had to be right early; a mistake there would have been costly. |
@@ -821,17 +828,18 @@ What is authored: the task lists, their dependency edges, and the ambiguity set.
 
 ### No model-backed executor
 
-Lane E — an optional `TaskExecutor` behind an environment variable, off by
-default — was scoped and **not built**. The deterministic executor is the only
-one shipped. The seam it would plug into exists and is exercised; nothing in the
-governance layer would need to change. But it is unbuilt, and the "agentic"
-label in this project means *governed multi-step execution under autonomy
-boundaries*, not autonomous role-playing agents.
+Lane E — an optional model-backed `TaskExecutor` behind an environment variable,
+off by default — was scoped and **not built**. The two shipped executor paths
+are credential-free: direct deterministic handlers and deterministic named-agent
+dispatch. A model-backed implementation could use the same seam without
+changing the governance layer.
 
-### Roles are labels
+### Agents are in-process roles
 
-`capability` strings are declarative attribution, not separate processes and not
-a dispatch mechanism.
+Agents are real dispatch owners, but they are not separate operating-system
+processes and do not invoke an LLM. Their handlers execute in-process under the
+same deterministic control plane. `Task.capability` is load-bearing: an unknown
+role or an unhandled task raises instead of silently producing output.
 
 ### Compensation is workflow-scoped
 
@@ -905,7 +913,7 @@ In priority order, if this continued past the time box:
 | 2 | Task decomposition with dependencies and sequencing | [§6.1](#61-dependency-graph-and-the-dag). Authored — see [§10](#10-limitations-and-what-was-not-built). |
 | 3 | Codebase reasoning (brownfield) | [§7 S-02](#s-02--brownfield-a-gated-reliability-change-that-safe-stops) — reads `app/repository.py` from disk |
 | 4 | **Workflow orchestration (critical differentiator)** | **All of [§6](#6-the-orchestration-layer)** |
-| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 194 tests; `docs/`; [browser client](#14-browser-client) |
+| 5 | Engineering output generation | [§5](#5-the-url-shortener); OpenAPI; 205 tests; `docs/`; [browser client](#14-browser-client) |
 | 6 | Validation and risk control | [§8](#8-test-approach-and-evidence), [§10](#10-limitations-and-what-was-not-built) |
 | 7 | Controlled autonomy | [§6.4](#64-human-in-the-loop-approval) |
 | 8 | Final engineering summary | [`docs/FINAL_SUMMARY.md`](docs/FINAL_SUMMARY.md) |
@@ -930,13 +938,14 @@ orchestrator/            the control plane
   approval.py            human approval records
   recovery.py            retry/fallback/compensation, event-derived metrics
   events.py              append-only JSONL event store
-  executor.py            the TaskExecutor seam + deterministic default
+  executor.py            the TaskExecutor seam + direct deterministic executor
+  agents.py              named roles + capability/task dispatch
   clock.py               injected time and identity
 
 scenarios/               greenfield.py, brownfield.py, ambiguous.py,
                          runner.py, cli.py
 
-tests/                   194 tests; test_governance_negative.py is the
+tests/                   205 tests; test_governance_negative.py is the
                          independent adversarial suite
 
 docs/                    ARCHITECTURE.md, TESTING.md, FINAL_SUMMARY.md

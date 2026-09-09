@@ -81,7 +81,11 @@ def test_s01_executes_full_sdlc_fork_join_and_human_release_gate(tmp_path: Path)
         event for event in engine.events if event.type is EventType.APPROVAL_DECIDED
     )
     assert requested.task_id == decided.task_id == "release-readiness"
+    assert requested.actor.id == "agent:release-manager"
     assert decided.actor.kind is ActorKind.HUMAN
+    assert engine.events[
+        _transition_index(engine, "release-readiness", TaskState.SUCCEEDED)
+    ].actor.id == "agent:release-manager"
     assert requested.seq < decided.seq < _transition_index(
         engine, "release-readiness", TaskState.SUCCEEDED
     )

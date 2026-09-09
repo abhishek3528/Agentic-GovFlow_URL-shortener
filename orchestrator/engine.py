@@ -211,7 +211,7 @@ class OrchestrationEngine:
             self._transition_task(
                 task.id,
                 TaskState.READY,
-                actor=actor,
+                actor=self._acting_actor(task, actor),
                 reason="all dependencies succeeded",
             )
         return tuple(task.id for task in frontier)
@@ -312,7 +312,7 @@ class OrchestrationEngine:
                 self._transition_task(
                     task.id,
                     TaskState.SKIPPED,
-                    actor=actor,
+                    actor=self._acting_actor(task, actor),
                     reason="a dependency did not succeed",
                 )
                 progress = True
@@ -437,13 +437,14 @@ class OrchestrationEngine:
             )
             return self.run(actor=approval.actor)
 
+        acting_actor = self._acting_actor(task, approval.actor)
         input_contents, input_artifacts, input_error = self._resolve_inputs(task)
         if input_error is not None:
-            self._emit_input_denial(task, input_error, approval.actor)
+            self._emit_input_denial(task, input_error, acting_actor)
             self._transition_task(
                 task.id,
                 TaskState.BLOCKED,
-                actor=approval.actor,
+                actor=acting_actor,
                 reason=input_error,
             )
             self._transition_run(
@@ -461,11 +462,11 @@ class OrchestrationEngine:
         self._transition_task(
             task.id,
             TaskState.RUNNING,
-            actor=approval.actor,
+            actor=acting_actor,
             reason="human approval granted",
         )
         task.attempts += 1
-        self._execute_running_task(task, input_contents, input_artifacts, approval.actor)
+        self._execute_running_task(task, input_contents, input_artifacts, acting_actor)
         if self._run_state is RunState.RUNNING and resume:
             return self.run(actor=approval.actor)
         return self._run_state
@@ -479,6 +480,8 @@ class OrchestrationEngine:
             raise EngineError(
                 f"task '{task_id}' must be ready before execution; it is '{task.state.value}'"
             )
+
+        actor = self._acting_actor(task, actor)
 
         if not self._policies_allow(task, actor):
             self._transition_task(
@@ -1245,6 +1248,20 @@ class OrchestrationEngine:
             payload={"state": destination.value},
         )
         self._completed_at = completed.at
+
+    def _acting_actor(self, task: Task, fallback: Actor) -> Actor:
+        """Resolve an optional executor-owned audit identity for task events."""
+        resolver = getattr(self._executor, "actor_for", None)
+        if not callable(resolver):
+            return fallback
+        actor = resolver(task.model_copy(deep=True))
+        if actor is None:
+            return fallback
+        if not isinstance(actor, Actor) or actor.kind is not ActorKind.AGENT:
+            raise EngineError(
+                f"executor returned an invalid acting agent for task '{task.id}'"
+            )
+        return actor
 
     def _emit(
         self,

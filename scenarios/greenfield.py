@@ -15,6 +15,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from orchestrator.agents import Agent, AgentRegistry
 from orchestrator.clock import deterministic_pair
 from orchestrator.contracts import (
     Actor,
@@ -32,7 +33,7 @@ from orchestrator.contracts import (
     TaskState,
 )
 from orchestrator.engine import OrchestrationEngine
-from orchestrator.executor import DeterministicExecutor, ScriptedFailureExecutor, TaskOutput
+from orchestrator.executor import ScriptedFailureExecutor, TaskOutput
 from orchestrator.policy import URL_SAFETY_POLICY, PolicyEngine
 from scenarios.approvals import ApprovalProvider, ScriptedApprovalProvider
 from scenarios.runner import ScenarioContext, ScenarioExecution, ScenarioSpec
@@ -278,7 +279,7 @@ def _smoke_validation(workspace: Path) -> dict[str, bool]:
 def _executor(
     workspace: Path,
     participants: dict[str, str],
-) -> ScriptedFailureExecutor:
+) -> tuple[ScriptedFailureExecutor, AgentRegistry]:
     def normalize(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
         return TaskOutput(
             summary="well-defined request normalized",
@@ -392,18 +393,30 @@ def _executor(
             },
         )
 
-    inner = DeterministicExecutor(
-        {
-            "normalize-requirement": normalize,
-            "design-baseline": design,
-            "implement-core": core,
-            "implement-analytics-reliability": analytics,
-            "integrated-validation": validate,
-            "document-baseline": document,
-            "release-readiness": release,
-        }
+    agents = AgentRegistry()
+    for agent in (
+        Agent("agent:business-analyst", "business-analyst", {"normalize-requirement": normalize}),
+        Agent("agent:solution-architect", "solution-architect", {"design-baseline": design}),
+        Agent("agent:backend-engineer", "backend-engineer", {"implement-core": core}),
+        Agent(
+            "agent:reliability-engineer",
+            "reliability-engineer",
+            {"implement-analytics-reliability": analytics},
+        ),
+        Agent(
+            "agent:quality-engineer",
+            "quality-engineer",
+            {"integrated-validation": validate},
+        ),
+        Agent("agent:technical-writer", "technical-writer", {"document-baseline": document}),
+        Agent("agent:release-manager", "release-manager", {"release-readiness": release}),
+    ):
+        agents.register(agent)
+    executor = ScriptedFailureExecutor(
+        agents,
+        failures={"integrated-validation": 1},
     )
-    return ScriptedFailureExecutor(inner, failures={"integrated-validation": 1})
+    return executor, agents
 
 
 def execute(
@@ -440,9 +453,10 @@ def execute(
         created_at=clock.iso(),
     )
     plan = build_plan(created_at=clock.iso())
+    executor, agents = _executor(context.workspace, participants)
     engine = OrchestrationEngine(
         plan,
-        _executor(context.workspace, participants),
+        executor,
         clock=clock,
         id_gen=ids,
         run_id=RUN_ID,
@@ -458,7 +472,7 @@ def execute(
             "It provides a production-shaped vertical slice while keeping the "
             "reviewer path local, bounded, and credential-free."
         ),
-        actor=AGENT,
+        actor=agents.actor_for(engine.task("design-baseline")),
         created_at=clock.iso(),
         task_id="design-baseline",
         context_version=1,
@@ -468,13 +482,13 @@ def execute(
     policies = PolicyEngine(clock=clock)
     engine.record_policy_decision(
         policies.evaluate_url("integrated-validation", "javascript:alert(1)"),
-        actor=AGENT,
+        actor=agents.actor_for(engine.task("integrated-validation")),
     )
     engine.record_policy_decision(
         policies.evaluate_url(
             "integrated-validation", "https://example.com/greenfield-smoke"
         ),
-        actor=AGENT,
+        actor=agents.actor_for(engine.task("integrated-validation")),
     )
 
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL

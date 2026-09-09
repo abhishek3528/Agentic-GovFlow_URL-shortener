@@ -19,6 +19,7 @@ from pathlib import Path
 from app.codes import Sha256CodeGenerator
 from app.repository import SqliteLinkRepository
 from app.service import ShortenerService
+from orchestrator.agents import Agent, AgentRegistry
 from orchestrator.clock import FixedClock, deterministic_pair
 from orchestrator.contracts import (
     Actor,
@@ -38,7 +39,7 @@ from orchestrator.contracts import (
     TaskState,
 )
 from orchestrator.engine import OrchestrationEngine
-from orchestrator.executor import DeterministicExecutor, TaskOutput
+from orchestrator.executor import TaskOutput
 from orchestrator.policy import (
     CHANGE_CONTROL_POLICY,
     EVIDENCE_RETENTION_POLICY,
@@ -388,7 +389,7 @@ def _executor(
     phase: dict[str, int],
     observations: dict[str, bool],
     participants: dict[str, str],
-):
+) -> AgentRegistry:
     def surface(_task: Task, _inputs: dict[str, str]) -> TaskOutput:
         return TaskOutput(
             summary="four material ambiguities surfaced with bounded assumptions",
@@ -617,23 +618,72 @@ def _executor(
             },
         )
 
-    return DeterministicExecutor(
-        {
-            "surface-analytics-ambiguities": surface,
-            "normalize-requirement-v1": normalize_v1,
-            "preserve-core-scope": preserve,
-            "normalize-requirement-v2": normalize_v2,
-            "design-analytics-change": design,
-            "plan-analytics-tests": plan_tests,
-            "plan-analytics-documentation": plan_docs,
-            "join-analytics-plans": join,
-            "clarify-analytics-privacy": clarify,
-            "implement-coarse-analytics": implement,
-            "validate-coarse-analytics": validate,
-            "document-coarse-analytics": document,
-            "final-quality-approval": quality,
-        }
-    )
+    agents = AgentRegistry()
+    for agent in (
+        Agent(
+            "agent:business-analyst",
+            "business-analyst",
+            {"surface-analytics-ambiguities": surface},
+        ),
+        Agent(
+            "agent:product-owner",
+            "product-owner",
+            {"normalize-requirement-v1": normalize_v1},
+        ),
+        Agent(
+            "agent:brownfield-analyst",
+            "brownfield-analyst",
+            {"preserve-core-scope": preserve},
+        ),
+        Agent(
+            "agent:privacy-analyst",
+            "privacy-analyst",
+            {"normalize-requirement-v2": normalize_v2},
+        ),
+        Agent(
+            "agent:solution-architect",
+            "solution-architect",
+            {"design-analytics-change": design},
+        ),
+        Agent(
+            "agent:quality-engineer",
+            "quality-engineer",
+            {
+                "plan-analytics-tests": plan_tests,
+                "validate-coarse-analytics": validate,
+            },
+        ),
+        Agent(
+            "agent:technical-writer",
+            "technical-writer",
+            {
+                "plan-analytics-documentation": plan_docs,
+                "document-coarse-analytics": document,
+            },
+        ),
+        Agent(
+            "agent:delivery-lead",
+            "delivery-lead",
+            {"join-analytics-plans": join},
+        ),
+        Agent(
+            "agent:privacy-owner",
+            "privacy-owner",
+            {"clarify-analytics-privacy": clarify},
+        ),
+        Agent(
+            "agent:backend-engineer",
+            "backend-engineer",
+            {"implement-coarse-analytics": implement},
+        ),
+        Agent(
+            "agent:quality-owner",
+            "quality-owner",
+            {"final-quality-approval": quality},
+        ),
+    ):
+        agents.register(agent)
+    return agents
 
 
 def _approval(
@@ -688,9 +738,10 @@ def execute(
     observations: dict[str, bool] = {}
     participants = {"quality_approver": HUMAN_QUALITY_OWNER.id}
     plan_v1 = build_plan(created_at=clock.iso(), context_version=1)
+    agents = _executor(context.workspace, phase, observations, participants)
     engine = OrchestrationEngine(
         plan_v1,
-        _executor(context.workspace, phase, observations, participants),
+        agents,
         clock=clock,
         id_gen=ids,
         run_id=RUN_ID,
@@ -728,7 +779,7 @@ def execute(
             id=ids.next_id("decision"),
             summary="Propose a minimal analytics assumption set; do not silently normalize",
             rationale="The request omits dimension, privacy, retention, threshold, and scope decisions.",
-            actor=AGENT,
+            actor=agents.actor_for(engine.task("surface-analytics-ambiguities")),
             created_at=clock.iso(),
             task_id="surface-analytics-ambiguities",
             context_version=1,
@@ -744,7 +795,7 @@ def execute(
             ("client_id",),
             raw_client_identifiers_retained=True,
         ),
-        actor=AGENT,
+        actor=agents.actor_for(engine.task("implement-coarse-analytics")),
     )
 
     assert engine.run(actor=AGENT) is RunState.AWAITING_APPROVAL
@@ -859,7 +910,10 @@ def execute(
             "final-quality-approval", retention_days=30, append_only=True
         ),
     ):
-        engine.record_policy_decision(decision, actor=AGENT)
+        engine.record_policy_decision(
+            decision,
+            actor=agents.actor_for(engine.task(decision.task_id)),
+        )
 
     # Re-applied approval gates: revised clarification, implementation, then
     # final quality. Each call resumes only human-authorized work.

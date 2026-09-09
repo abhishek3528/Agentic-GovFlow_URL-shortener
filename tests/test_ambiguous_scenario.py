@@ -90,6 +90,8 @@ def test_s03_parallel_planning_joins_before_human_clarification(tmp_path: Path) 
     docs_ready = _transition_index(engine, "plan-analytics-documentation", TaskState.READY, 1)
     tests_running = _transition_index(engine, "plan-analytics-tests", TaskState.RUNNING, 1)
     join_running = _transition_index(engine, "join-analytics-plans", TaskState.RUNNING, 1)
+    assert engine.events[tests_running].actor.id == "agent:quality-engineer"
+    assert engine.events[join_running].actor.id == "agent:delivery-lead"
     assert tests_ready < tests_running
     assert docs_ready < tests_running
     assert join_running > _transition_index(

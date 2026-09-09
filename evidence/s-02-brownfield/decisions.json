@@ -1,7 +1,7 @@
 [
   {
     "actor": {
-      "id": "agent:s02-orchestrator",
+      "id": "agent:solution-architect",
       "kind": "agent"
     },
     "context_version": 1,

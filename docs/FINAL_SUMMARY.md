@@ -10,18 +10,19 @@ scenarios. Additional planning phases were collapsed into implementation so the
 final architecture could be documented from executable code rather than intent.
 
 Python, FastAPI, SQLite, and pytest keep the reviewer path local and readable.
-The `TaskExecutor` seam separates execution from governance, while deterministic
-handlers and injected time/identity make credential-free replay possible. The
-separation is exercised by
-`tests/test_engine.py::test_fork_join_executes_end_to_end_with_ordered_events`;
-deterministic replay is checked by
+The `TaskExecutor` seam separates execution from governance. The scenarios use
+the second implementation, `AgentRegistry`, where `Task.capability` selects a
+named role and the task id selects that role's handler. Missing registrations
+raise and task work is attributed to the acting agent in the event stream;
+`DeterministicExecutor` remains intact for direct and adversarial tests. This is
+exercised by `tests/test_agents.py`; deterministic replay is checked by
 `tests/test_engine.py::test_deterministic_execution_replays_byte_stable_structure`.
 
 ## Delivered artifacts
 
-- `orchestrator/`: frozen contracts, DAG validation, governed execution,
-  append-only events, policies, approvals, bounded recovery, metrics, and
-  selective re-planning.
+- `orchestrator/`: frozen contracts, DAG validation, named agent dispatch,
+  governed execution, append-only events, policies, approvals, bounded recovery,
+  metrics, and selective re-planning.
 - `app/`: FastAPI create, redirect, stats, health/readiness, and OpenAPI endpoints
   over restart-safe SQLite. Product behavior is checked by
   `tests/test_shortener_service.py`, `tests/test_shortener_api.py`, and
@@ -56,13 +57,14 @@ success label. Terminal safe-stop cannot later transition to success
 
 ## Validation
 
-The final suite contains **194 passing tests**, including **100 adversarial tests**
+The final suite contains **205 passing tests**, including **106 adversarial tests**
 in `tests/test_governance_negative.py`. The full command is documented in
 `docs/TESTING.md`.
 
-Evidence is regenerable from `python -m scenarios.cli run all`. In the verified
-repeatability comparison, **24 of 30 files were byte-identical**; the remaining
-files differed only in run-id/timestamp fields. Canonical file generation,
+Evidence is regenerable from
+`.venv\Scripts\python.exe -m scenarios.cli run all`. In the verified
+repeatability comparison, **30 of 30 files were byte-identical** across two
+complete replays into the same evidence root. Canonical file generation,
 content hashes, and byte-identical regeneration for a fixed deterministic run
 are enforced by
 `tests/test_scenario_runner.py::test_exporter_writes_indexed_reproducible_bundle`.

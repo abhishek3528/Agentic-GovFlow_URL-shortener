@@ -3,7 +3,7 @@
     {
       "description": "terminal scenario result and evidence pointer",
       "path": "result.json",
-      "sha256": "2369d39dcf8d0e9807c304c71126157c885742eed1a913e94a5a5de76eaf0317"
+      "sha256": "a41a90e6c0991d38bf0ee67d18d9ecd4cd8d7ab0434d3d903db623a53589c14a"
     },
     {
       "description": "original and revised requirement contexts",
@@ -28,7 +28,7 @@
     {
       "description": "attributed engineering decision lineage",
       "path": "decisions.json",
-      "sha256": "606038125b667c15cd763c11f173393a5734772c95bf3aa3a9d01ff538bf5ff0"
+      "sha256": "7d7eef0e90547cc3bba7be1dfaa4a178f6508fe40e2cc9e3071ed48c500fcb5b"
     },
     {
       "description": "gate, policy, and human-approval outcomes",
@@ -43,7 +43,7 @@
     {
       "description": "append-only correlated event history",
       "path": "events.jsonl",
-      "sha256": "e5f93b4ff7c1c49a37de7c0df74d77edef9ea2176bdca736f754f89f3d06db5d"
+      "sha256": "433ce048ffe82ee4ec6ff7c6d4500dfe423ad5acde2c437d5ff489600b891c4a"
     }
   ],
   "reviewable_outputs": {

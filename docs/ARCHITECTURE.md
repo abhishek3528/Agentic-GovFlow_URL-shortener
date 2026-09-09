@@ -8,7 +8,8 @@ The repository separates decisions about work from the work itself:
 |---|---|
 | `orchestrator/` | Owns plans, legal state transitions, readiness, gates, policies, approvals, artifact provenance, recovery, re-planning, and events. |
 | `orchestrator/executor.py` | Defines the narrow `TaskExecutor.execute(task, inputs) -> TaskOutput` work seam. The deterministic implementations perform task work and report outputs or failures. |
-| `scenarios/` | Assembles plans and deterministic handlers into the sequential S-01 -> S-02 -> S-03 demonstration and exports run evidence. |
+| `orchestrator/agents.py` | Implements named role agents and two-level capability -> task-handler dispatch, failing closed on missing ownership. |
+| `scenarios/` | Assembles plans and deterministic agent handlers into the sequential S-01 -> S-02 -> S-03 demonstration and exports run evidence. |
 | `app/` | The governed work product: a FastAPI URL shortener with SQLite persistence. |
 
 An executor returns content and validation results; the engine assigns artifact
@@ -17,8 +18,62 @@ the workflow. The seam and engine-owned output processing are exercised by
 `tests/test_contracts.py::test_registered_handler_overrides_the_stub` and
 `tests/test_engine.py::test_fork_join_executes_end_to_end_with_ordered_events`.
 
-The only implemented executor path is deterministic and credential-free. No
-model-backed executor was built.
+Two `TaskExecutor` paths are implemented and credential-free.
+`DeterministicExecutor` remains the direct handler/stub path used by core and
+negative tests. The scenarios use `AgentRegistry`: `Task.capability` first
+selects the owning `Agent`, then the task id selects that agent's handler. A
+missing capability or handler raises rather than stubbing, and execution events
+are attributed to the resolved agent. These claims are exercised by
+`tests/test_agents.py`. No model-backed executor was built.
+
+## What "agentic" means here
+
+The word carries two meanings, and this project satisfies one of them
+deliberately rather than the other by accident.
+
+The assessment defines it in its closing principle: *"Agents execute under
+defined autonomy boundaries; humans own oversight, approvals, and final
+quality."* That is a statement about **autonomy and governance** — who is
+allowed to do what, and where a person must intervene. It is the definition this
+system is built to.
+
+The popular meaning is narrower: an agent is a large language model in a loop.
+No model is invoked anywhere in this repository, so by that reading it would not
+qualify. The distinction is worth stating plainly rather than leaving a reviewer
+to infer it.
+
+**What is actually here:**
+
+- **Named agents that own work.** Fourteen roles — `backend-engineer`,
+  `quality-engineer`, `privacy-owner` and the rest — registered in an
+  `AgentRegistry`. A task declares a `capability`; that capability selects the
+  agent; the agent selects its handler. A capability no agent owns raises
+  `AgentDispatchError` rather than running, so the role is an executable
+  contract and not a label
+  (`tests/test_governance_negative.py::test_an_unknown_capability_fails_closed`).
+- **Attribution in the audit trail.** Every event names the agent that acted —
+  `agent:quality-engineer`, `agent:release-manager` — and the boundary between
+  agent and human is enforced, not annotated. An agent named to look like a
+  person still records as `AGENT` and still cannot grant an approval
+  (`::test_an_agent_cannot_attribute_its_work_to_a_human`).
+- **Autonomy with bounds.** Agents run multi-step work unattended; gates,
+  policies, bounded recovery and human approval decide how far that autonomy
+  extends.
+
+**Why execution is deterministic.** It is a trade, not an omission. A
+credential-free executor means a reviewer runs the whole system offline with no
+API key, and two runs produce byte-identical evidence — which is what makes
+every governance claim in these documents checkable rather than assertable. A
+model-backed executor would forfeit both.
+
+**What that costs.** The narrow reading goes undemonstrated: nothing here proves
+the control plane survives contact with a non-deterministic worker. The
+mitigation is structural rather than rhetorical — the `TaskExecutor` seam
+already carries two independent implementations (`DeterministicExecutor` and
+`AgentRegistry`), so a third that calls a model would slot in without touching
+gates, approvals, recovery, or audit. That is the strongest available evidence
+short of building it, and it is stated as a limitation in
+`docs/FINAL_SUMMARY.md` rather than glossed.
 
 ## DAG execution and gates
 

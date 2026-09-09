@@ -107,6 +107,7 @@ def test_s02_exhausts_retry_compensates_and_safe_stops_with_metrics(tmp_path: Pa
     compensation = next(
         event for event in engine.events if event.type is EventType.COMPENSATION_EXECUTED
     )
+    assert compensation.actor.id == "agent:release-engineer"
     assert compensation.payload["action"] == COMPENSATION_NAME
     assert compensation.payload["executed"] is True
     assert compensation.payload["succeeded"] is True

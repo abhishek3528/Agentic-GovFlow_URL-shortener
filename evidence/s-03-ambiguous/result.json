@@ -346,7 +346,7 @@
   "decisions": [
     {
       "actor": {
-        "id": "agent:s03-orchestrator",
+        "id": "agent:business-analyst",
         "kind": "agent"
       },
       "context_version": 1,

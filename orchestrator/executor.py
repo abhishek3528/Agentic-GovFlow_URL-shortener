@@ -7,11 +7,12 @@ rather than a script: the same governed graph runs with deterministic executors
 in CI and could run with model-backed executors without the control plane
 changing.
 
-``DeterministicExecutor`` is the default and requires no credentials, so a
-reviewer can reproduce every scenario offline. ``ScriptedFailureExecutor`` wraps
-another executor to inject transient or persistent failures - this is how retry
-budgets, compensation and safe-stop are exercised as real code paths rather than
-asserted in prose.
+``DeterministicExecutor`` is the direct credential-free implementation retained
+for core and adversarial tests. ``AgentRegistry`` in ``orchestrator.agents`` is
+the second implementation and drives the scenarios through capability-owned
+roles. ``ScriptedFailureExecutor`` wraps another executor to inject transient or
+persistent failures - this is how retry budgets, compensation and safe-stop are
+exercised as real code paths rather than asserted in prose.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from typing import Callable, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from orchestrator.contracts import Task
+from orchestrator.contracts import Actor, Task
 
 
 class TaskOutput(BaseModel):
@@ -125,3 +126,8 @@ class ScriptedFailureExecutor:
             self._remaining[task.id] = remaining - 1
             raise TaskFailure(f"injected transient failure in '{task.id}'", transient=True)
         return self._inner.execute(task, inputs)
+
+    def actor_for(self, task: Task) -> Actor | None:
+        """Preserve optional acting-agent attribution through the wrapper."""
+        resolver = getattr(self._inner, "actor_for", None)
+        return resolver(task) if callable(resolver) else None
